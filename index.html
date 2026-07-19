@@ -7,6 +7,7 @@
     <title>🧬 مخبر الصحة الفيزيائية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* نفس الـ CSS السابق (لم يتغير) */
         *{margin:0;padding:0;box-sizing:border-box}
         body{background:#0a0f1a;color:#ffffff;font-family:'Segoe UI',system-ui,sans-serif;padding:1rem;display:flex;justify-content:center;align-items:center;min-height:100vh}
         .container{max-width:520px;width:100%;background:#111827;border-radius:2rem;padding:1.5rem;border:2px solid #334155;box-shadow:0 20px 40px -10px #000}
@@ -80,17 +81,6 @@
         .footer{text-align:center;font-size:0.6rem;color:#475569;border-top:1px solid #1e293b;padding-top:10px;margin-top:10px}
         .footer a{display:none}
         .hidden{display:none!important}
-        .consent-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
-        .consent-overlay.show{display:flex}
-        .consent-box{background:#1e293b;border:2px solid #f5b81b;border-radius:24px;padding:24px;max-width:420px;width:100%;text-align:center}
-        .consent-box .legal-icon{font-size:2.5rem;margin-bottom:8px}
-        .consent-box h2{color:#f5b81b;font-size:1.2rem;margin-bottom:8px}
-        .consent-box .legal-text{color:#cbd5e1;font-size:0.9rem;line-height:1.8;text-align:right;padding:10px 0}
-        .consent-box .legal-text strong{color:#f5b81b}
-        .consent-box .btn-consent{background:#f5b81b;border:none;padding:12px 30px;border-radius:40px;font-weight:700;color:#0a0f1a;cursor:pointer;font-size:1rem;margin-top:8px;transition:0.2s}
-        .consent-box .btn-consent:hover{transform:scale(1.02)}
-        .consent-box .btn-refuse{background:#334155;border:none;padding:10px 30px;border-radius:40px;font-weight:600;color:#94a3b8;cursor:pointer;font-size:0.9rem;margin-top:6px;transition:0.2s}
-        .consent-box .btn-refuse:hover{background:#444}
         .step-counter{text-align:center;font-size:0.8rem;color:#94a3b8;margin:6px 0}
         .step-counter .current{color:#f5b81b;font-weight:700}
         .toast-custom{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;border:2px solid #f5b81b;color:#fff;padding:10px 22px;border-radius:40px;font-size:0.9rem;z-index:1000;box-shadow:0 8px 30px rgba(0,0,0,0.6);text-align:center;max-width:90%;font-weight:500;transition:all 0.3s ease}
@@ -151,21 +141,8 @@
 
     <div class="gold-divider"></div>
 
-    <!-- START BUTTON -->
+    <!-- START BUTTON (يبدأ التشخيص مباشرة) -->
     <button class="start-btn" id="startBtn">🧬 بدء الفحص الفيزيائي</button>
-
-    <!-- CONSENT SCREEN (يظهر باللغة المختارة) -->
-    <div class="consent-overlay" id="consentOverlay">
-        <div class="consent-box">
-            <div class="legal-icon">🧪</div>
-            <h2 id="consentTitle">موافقة مسبقة</h2>
-            <div class="legal-text" id="consentText">
-                <span id="consentMessage">سيطلب محاكاة وضع الإصبع، التنفس، والمشي. لن يتم تخزين أي بيانات.</span>
-            </div>
-            <button class="btn-consent" id="consentBtn">✅ أوافق وأبدأ</button><br>
-            <button class="btn-refuse" id="refuseBtn">✖ أرفض</button>
-        </div>
-    </div>
 
     <!-- LAB AREA -->
     <div id="labArea">
@@ -264,7 +241,7 @@
         </span>
     </div>
 
-    <div class="footer">🧬 Physical Health Lab | V2.4</div>
+    <div class="footer">🧬 Physical Health Lab | V2.5</div>
 </div>
 
 <!-- SECRET MODAL -->
@@ -281,12 +258,9 @@
 
 <script>
 // ============================================================
-// 🔐 البصمة الخفية: PHS-2026-07-05-FINAL
+// 🔐 البصمة الخفية و نظام الأمان (نفس الكود السابق)
 // ============================================================
 
-// ============================================================
-// كلمة المرور الديناميكية
-// ============================================================
 function getDynamicPassword() {
     try {
         var today = new Date();
@@ -307,9 +281,6 @@ function getDynamicPassword() {
 }
 var STATIC_PASSWORD = 'MOULOUD2026';
 
-// ============================================================
-// توقيع الرصيد
-// ============================================================
 var SECRET_SALT = 'PhysicHealth-2026-S3cur3!';
 
 function generateSignature(value) {
@@ -440,11 +411,11 @@ function activateAdminMode() {
     freeCredits = 999;
     paidCredits = 0;
     updateCreditsDisplay();
-    showToast('👑 ' + (currentLang === 'ar' ? 'وضع المدير مفعل' : 'Admin mode activated'));
+    showToast('👑 ' + t('admin_on'));
 }
 
 // ============================================================
-// 54 LANGUAGES - 20 MANUAL + 34 ONLINE
+// 🌍 54 LANGUAGES - 20 MANUAL + 34 ONLINE
 // ============================================================
 var langList = ["ar","en","fr","es","de","it","pt","ru","zh","ja","ko","hi","tr","fa","ur","id","ms","vi","th","nl","pl","sv","bn","pa","mr","ta","te","gu","sw","ha","yo","yue","my","uk","sd","uz","am","tl","ro","he","el","cs","hu","bg","hr","sk","da","fi","no","sr","lt","lv","et","sl"];
 
@@ -465,8 +436,12 @@ var langNative = {
     et:"🇪🇪 Eesti", sl:"🇸🇮 Slovenščina"
 };
 
-// 20 MANUAL TRANSLATIONS (مختصرة هنا للحفاظ على حجم الكود)
-// سيتم إضافة الترجمات كاملة في النسخة النهائية
+// قائمة اللغات المترجمة يدوياً (20 لغة)
+var MANUAL_LANGS = ["ar","en","fr","es","de","it","pt","ru","zh","ja","ko","hi","tr","fa","ur","id","ms","vi","th","nl","pl","sv"];
+
+// ============================================================
+// 📝 20 MANUAL TRANSLATIONS (نفس الترجمات السابقة كاملة)
+// ============================================================
 var translations = {};
 
 // Arabic
@@ -474,9 +449,6 @@ translations.ar = {
     dynamic:"مخبر الصحة الفيزيائية", freeLabel:"تشخيصات مجانية",
     listen:"استمع", copy:"انسخ", share:"شارك", back:"العودة", rating:"تقييمك",
     start_btn:"🧬 بدء الفحص الفيزيائي",
-    consent_title:"موافقة مسبقة",
-    consent_text:"سيطلب محاكاة وضع الإصبع، التنفس، والمشي. لن يتم تخزين أي بيانات.",
-    consent_btn:"✅ أوافق وأبدأ", refuse_btn:"✖ أرفض",
     sensor1:"حساس النبض والأكسجين", tool1:"📸 كاميرا",
     sensor2:"حساس التنفس والصوت", tool2:"🎙️ ميكروفون",
     sensor3:"حساس التوازن والمشي", tool3:"📳 اهتزاز",
@@ -510,9 +482,6 @@ translations.en = {
     dynamic:"Physical Health Lab", freeLabel:"Free diagnoses",
     listen:"Listen", copy:"Copy", share:"Share", back:"Back", rating:"Your rating",
     start_btn:"🧬 Start Physical Check",
-    consent_title:"Prior Consent",
-    consent_text:"This will simulate finger placement, breathing, and walking. No data will be stored.",
-    consent_btn:"✅ I Agree & Start", refuse_btn:"✖ Refuse",
     sensor1:"Pulse & Oxygen", tool1:"📸 Camera",
     sensor2:"Breath & Sound", tool2:"🎙️ Mic",
     sensor3:"Balance & Gait", tool3:"📳 Motion",
@@ -546,9 +515,6 @@ translations.fr = {
     dynamic:"Laboratoire de santé physique", freeLabel:"Diagnostics gratuits",
     listen:"Écouter", copy:"Copier", share:"Partager", back:"Retour", rating:"Votre évaluation",
     start_btn:"🧬 Commencer le bilan",
-    consent_title:"Consentement préalable",
-    consent_text:"Ceci simulera le placement du doigt, la respiration et la marche. Aucune donnée ne sera stockée.",
-    consent_btn:"✅ J'accepte et commence", refuse_btn:"✖ Refuser",
     sensor1:"Pouls et oxygène", tool1:"📸 Caméra",
     sensor2:"Respiration et son", tool2:"🎙️ Micro",
     sensor3:"Équilibre et marche", tool3:"📳 Mouvement",
@@ -582,9 +548,6 @@ translations.es = {
     dynamic:"Laboratorio de salud física", freeLabel:"Diagnósticos gratis",
     listen:"Escuchar", copy:"Copiar", share:"Compartir", back:"Volver", rating:"Su valoración",
     start_btn:"🧬 Iniciar chequeo",
-    consent_title:"Consentimiento previo",
-    consent_text:"Esto simulará la colocación del dedo, la respiración y la caminata. No se almacenarán datos.",
-    consent_btn:"✅ Acepto y comienzo", refuse_btn:"✖ Rechazar",
     sensor1:"Pulso y oxígeno", tool1:"📸 Cámara",
     sensor2:"Respiración y sonido", tool2:"🎙️ Micrófono",
     sensor3:"Equilibrio y marcha", tool3:"📳 Movimiento",
@@ -618,9 +581,6 @@ translations.de = {
     dynamic:"Physikalisches Gesundheitslabor", freeLabel:"Kostenlose Diagnosen",
     listen:"Anhören", copy:"Kopieren", share:"Teilen", back:"Zurück", rating:"Ihre Bewertung",
     start_btn:"🧬 Physische Untersuchung starten",
-    consent_title:"Vorherige Zustimmung",
-    consent_text:"Dies simuliert das Platzieren des Fingers, Atmen und Gehen. Es werden keine Daten gespeichert.",
-    consent_btn:"✅ Ich stimme zu und starte", refuse_btn:"✖ Ablehnen",
     sensor1:"Puls & Sauerstoff", tool1:"📸 Kamera",
     sensor2:"Atmung & Klang", tool2:"🎙️ Mikrofon",
     sensor3:"Gleichgewicht & Gang", tool3:"📳 Bewegung",
@@ -654,9 +614,6 @@ translations.it = {
     dynamic:"Laboratorio di salute fisica", freeLabel:"Diagnosi gratuite",
     listen:"Ascolta", copy:"Copia", share:"Condividi", back:"Indietro", rating:"La tua valutazione",
     start_btn:"🧬 Avvia controllo fisico",
-    consent_title:"Consenso preventivo",
-    consent_text:"Questo simulerà il posizionamento del dito, la respirazione e la camminata. Nessun dato verrà memorizzato.",
-    consent_btn:"✅ Accetto e inizio", refuse_btn:"✖ Rifiuta",
     sensor1:"Polso e ossigeno", tool1:"📸 Fotocamera",
     sensor2:"Respiro e suono", tool2:"🎙️ Microfono",
     sensor3:"Equilibrio e andatura", tool3:"📳 Movimento",
@@ -690,9 +647,6 @@ translations.pt = {
     dynamic:"Laboratório de saúde física", freeLabel:"Diagnósticos grátis",
     listen:"Ouvir", copy:"Copiar", share:"Compartilhar", back:"Voltar", rating:"Sua avaliação",
     start_btn:"🧬 Iniciar exame físico",
-    consent_title:"Consentimento prévio",
-    consent_text:"Isso simulará a colocação do dedo, respiração e caminhada. Nenhum dado será armazenado.",
-    consent_btn:"✅ Concordo e começo", refuse_btn:"✖ Recusar",
     sensor1:"Pulso e oxigênio", tool1:"📸 Câmera",
     sensor2:"Respiração e som", tool2:"🎙️ Microfone",
     sensor3:"Equilíbrio e marcha", tool3:"📳 Movimento",
@@ -726,9 +680,6 @@ translations.ru = {
     dynamic:"Лаборатория физического здоровья", freeLabel:"Бесплатные диагностики",
     listen:"Слушать", copy:"Копировать", share:"Поделиться", back:"Назад", rating:"Ваша оценка",
     start_btn:"🧬 Начать физический осмотр",
-    consent_title:"Предварительное согласие",
-    consent_text:"Это будет имитировать размещение пальца, дыхание и ходьбу. Никакие данные не будут сохранены.",
-    consent_btn:"✅ Согласен и начинаю", refuse_btn:"✖ Отказаться",
     sensor1:"Пульс и кислород", tool1:"📸 Камера",
     sensor2:"Дыхание и звук", tool2:"🎙️ Микрофон",
     sensor3:"Баланс и походка", tool3:"📳 Движение",
@@ -762,9 +713,6 @@ translations.zh = {
     dynamic:"物理健康实验室", freeLabel:"免费诊断",
     listen:"听", copy:"复制", share:"分享", back:"返回", rating:"您的评分",
     start_btn:"🧬 开始身体检查",
-    consent_title:"事先同意",
-    consent_text:"这将模拟手指放置、呼吸和行走。不会存储任何数据。",
-    consent_btn:"✅ 我同意并开始", refuse_btn:"✖ 拒绝",
     sensor1:"脉搏和氧气", tool1:"📸 相机",
     sensor2:"呼吸和声音", tool2:"🎙️ 麦克风",
     sensor3:"平衡和步态", tool3:"📳 运动",
@@ -798,9 +746,6 @@ translations.ja = {
     dynamic:"物理健康ラボ", freeLabel:"無料診断",
     listen:"聞く", copy:"コピー", share:"共有", back:"戻る", rating:"評価",
     start_btn:"🧬 身体検査を開始",
-    consent_title:"事前同意",
-    consent_text:"指の配置、呼吸、歩行をシミュレートします。データは保存されません。",
-    consent_btn:"✅ 同意して開始", refuse_btn:"✖ 拒否",
     sensor1:"脈拍と酸素", tool1:"📸 カメラ",
     sensor2:"呼吸と音", tool2:"🎙️ マイク",
     sensor3:"バランスと歩行", tool3:"📳 モーション",
@@ -834,9 +779,6 @@ translations.ko = {
     dynamic:"물리 건강 연구소", freeLabel:"무료 진단",
     listen:"듣기", copy:"복사", share:"공유", back:"뒤로", rating:"평가",
     start_btn:"🧬 신체 검사 시작",
-    consent_title:"사전 동의",
-    consent_text:"손가락 배치, 호흡, 걷기를 시뮬레이션합니다. 데이터가 저장되지 않습니다.",
-    consent_btn:"✅ 동의하고 시작", refuse_btn:"✖ 거부",
     sensor1:"맥박 및 산소", tool1:"📸 카메라",
     sensor2:"호흡 및 소리", tool2:"🎙️ 마이크",
     sensor3:"균형 및 보행", tool3:"📳 움직임",
@@ -870,9 +812,6 @@ translations.hi = {
     dynamic:"भौतिक स्वास्थ्य प्रयोगशाला", freeLabel:"मुफ्त निदान",
     listen:"सुनें", copy:"कॉपी करें", share:"साझा करें", back:"वापस", rating:"आपकी रेटिंग",
     start_btn:"🧬 शारीरिक जांच शुरू करें",
-    consent_title:"पूर्व सहमति",
-    consent_text:"यह उंगली रखने, सांस लेने और चलने का अनुकरण करेगा। कोई डेटा संग्रहीत नहीं किया जाएगा।",
-    consent_btn:"✅ सहमत हूँ और शुरू करें", refuse_btn:"✖ अस्वीकार करें",
     sensor1:"नाड़ी और ऑक्सीजन", tool1:"📸 कैमरा",
     sensor2:"सांस और आवाज", tool2:"🎙️ माइक्रोफोन",
     sensor3:"संतुलन और चाल", tool3:"📳 गति",
@@ -906,9 +845,6 @@ translations.tr = {
     dynamic:"Fiziksel Sağlık Laboratuvarı", freeLabel:"Ücretsiz teşhis",
     listen:"Dinle", copy:"Kopyala", share:"Paylaş", back:"Geri", rating:"Değerlendirmeniz",
     start_btn:"🧬 Fiziksel muayeneyi başlat",
-    consent_title:"Önceden Onay",
-    consent_text:"Bu, parmak yerleştirme, nefes alma ve yürümeyi simüle edecektir. Hiçbir veri saklanmayacaktır.",
-    consent_btn:"✅ Kabul ediyorum ve başlıyorum", refuse_btn:"✖ Reddet",
     sensor1:"Nabız ve oksijen", tool1:"📸 Kamera",
     sensor2:"Nefes ve ses", tool2:"🎙️ Mikrofon",
     sensor3:"Denge ve yürüyüş", tool3:"📳 Hareket",
@@ -942,9 +878,6 @@ translations.fa = {
     dynamic:"آزمایشگاه سلامت فیزیکی", freeLabel:"تشخیص رایگان",
     listen:"گوش کن", copy:"کپی کن", share:"اشتراک‌گذاری", back:"بازگشت", rating:"امتیاز شما",
     start_btn:"🧬 شروع معاینه فیزیکی",
-    consent_title:"موافقت قبلی",
-    consent_text:"این کار قرار دادن انگشت، تنفس و راه رفتن را شبیه‌سازی می‌کند. هیچ داده‌ای ذخیره نخواهد شد.",
-    consent_btn:"✅ موافقم و شروع می‌کنم", refuse_btn:"✖ رد می‌کنم",
     sensor1:"نبض و اکسیژن", tool1:"📸 دوربین",
     sensor2:"تنفس و صدا", tool2:"🎙️ میکروفون",
     sensor3:"تعادل و راه رفتن", tool3:"📳 حرکت",
@@ -978,9 +911,6 @@ translations.ur = {
     dynamic:"طبیعی صحت لیبارٹری", freeLabel:"مفت تشخیص",
     listen:"سنیں", copy:"کاپی کریں", share:"شیئر کریں", back:"واپس", rating:"آپ کی درجہ بندی",
     start_btn:"🧬 جسمانی معائنہ شروع کریں",
-    consent_title:"پہلے سے رضایت",
-    consent_text:"یہ انگلی رکھنے، سانس لینے اور چلنے کی نقل کرے گا۔ کوئی ڈیٹا محفوظ نہیں کیا جائے گا۔",
-    consent_btn:"✅ متفق ہوں اور شروع کریں", refuse_btn:"✖ انکار کریں",
     sensor1:"نبض اور آکسیجن", tool1:"📸 کیمرہ",
     sensor2:"سانس اور آواز", tool2:"🎙️ مائیکروفون",
     sensor3:"توازن اور چال", tool3:"📳 حرکت",
@@ -1014,9 +944,6 @@ translations.id = {
     dynamic:"Laboratorium Kesehatan Fisik", freeLabel:"Diagnosis gratis",
     listen:"Dengar", copy:"Salin", share:"Bagikan", back:"Kembali", rating:"Penilaian Anda",
     start_btn:"🧬 Mulai Pemeriksaan Fisik",
-    consent_title:"Persetujuan Sebelumnya",
-    consent_text:"Ini akan mensimulasikan penempatan jari, pernapasan, dan berjalan. Tidak ada data yang akan disimpan.",
-    consent_btn:"✅ Saya Setuju & Mulai", refuse_btn:"✖ Tolak",
     sensor1:"Nadi & Oksigen", tool1:"📸 Kamera",
     sensor2:"Napas & Suara", tool2:"🎙️ Mikrofon",
     sensor3:"Keseimbangan & Jalan", tool3:"📳 Gerak",
@@ -1050,9 +977,6 @@ translations.ms = {
     dynamic:"Makmal Kesihatan Fizikal", freeLabel:"Diagnosis percuma",
     listen:"Dengar", copy:"Salin", share:"Kongsi", back:"Kembali", rating:"Penilaian anda",
     start_btn:"🧬 Mulakan Pemeriksaan Fizikal",
-    consent_title:"Persetujuan Awal",
-    consent_text:"Ini akan mensimulasikan peletakan jari, pernafasan, dan berjalan. Tiada data akan disimpan.",
-    consent_btn:"✅ Saya Setuju & Mulakan", refuse_btn:"✖ Tolak",
     sensor1:"Nadi & Oksigen", tool1:"📸 Kamera",
     sensor2:"Nafas & Bunyi", tool2:"🎙️ Mikrofon",
     sensor3:"Keseimbangan & Gaya Berjalan", tool3:"📳 Gerakan",
@@ -1086,9 +1010,6 @@ translations.vi = {
     dynamic:"Phòng thí nghiệm sức khỏe thể chất", freeLabel:"Chẩn đoán miễn phí",
     listen:"Nghe", copy:"Sao chép", share:"Chia sẻ", back:"Quay lại", rating:"Đánh giá của bạn",
     start_btn:"🧬 Bắt đầu kiểm tra thể chất",
-    consent_title:"Đồng ý trước",
-    consent_text:"Điều này sẽ mô phỏng việc đặt ngón tay, thở và đi bộ. Không có dữ liệu nào được lưu trữ.",
-    consent_btn:"✅ Tôi đồng ý & Bắt đầu", refuse_btn:"✖ Từ chối",
     sensor1:"Mạch & Oxy", tool1:"📸 Camera",
     sensor2:"Hơi thở & Âm thanh", tool2:"🎙️ Micro",
     sensor3:"Thăng bằng & Dáng đi", tool3:"📳 Chuyển động",
@@ -1122,9 +1043,6 @@ translations.th = {
     dynamic:"ห้องปฏิบัติการสุขภาพกายภาพ", freeLabel:"การวินิจฉัยฟรี",
     listen:"ฟัง", copy:"คัดลอก", share:"แชร์", back:"กลับ", rating:"คะแนนของคุณ",
     start_btn:"🧬 เริ่มการตรวจร่างกาย",
-    consent_title:"การยินยอมล่วงหน้า",
-    consent_text:"这将模拟手指放置、呼吸和行走。不会存储任何数据。",
-    consent_btn:"✅ ตกลงและเริ่ม", refuse_btn:"✖ ปฏิเสธ",
     sensor1:"ชีพจรและออกซิเจน", tool1:"📸 กล้อง",
     sensor2:"การหายใจและเสียง", tool2:"🎙️ ไมโครโฟน",
     sensor3:"ความสมดุลและการเดิน", tool3:"📳 การเคลื่อนไหว",
@@ -1158,9 +1076,6 @@ translations.nl = {
     dynamic:"Fysiek Gezondheidslaboratorium", freeLabel:"Gratis diagnoses",
     listen:"Luister", copy:"Kopieer", share:"Deel", back:"Terug", rating:"Uw beoordeling",
     start_btn:"🧬 Start fysieke controle",
-    consent_title:"Voorafgaande toestemming",
-    consent_text:"Dit simuleert het plaatsen van de vinger, ademhaling en lopen. Er worden geen gegevens opgeslagen.",
-    consent_btn:"✅ Ik ga akkoord en start", refuse_btn:"✖ Weigeren",
     sensor1:"Pols & Zuurstof", tool1:"📸 Camera",
     sensor2:"Ademhaling & Geluid", tool2:"🎙️ Microfoon",
     sensor3:"Balans & Gang", tool3:"📳 Beweging",
@@ -1194,9 +1109,6 @@ translations.pl = {
     dynamic:"Laboratorium Zdrowia Fizycznego", freeLabel:"Darmowe diagnozy",
     listen:"Słuchaj", copy:"Kopiuj", share:"Udostępnij", back:"Wróć", rating:"Twoja ocena",
     start_btn:"🧬 Rozpocznij badanie fizyczne",
-    consent_title:"Wcześniejsza zgoda",
-    consent_text:"Będzie to symulować umieszczenie palca, oddychanie i chodzenie. Żadne dane nie będą przechowywane.",
-    consent_btn:"✅ Zgadzam się i zaczynam", refuse_btn:"✖ Odrzuć",
     sensor1:"Tętno i tlen", tool1:"📸 Aparat",
     sensor2:"Oddech i dźwięk", tool2:"🎙️ Mikrofon",
     sensor3:"Równowaga i chód", tool3:"📳 Ruch",
@@ -1230,9 +1142,6 @@ translations.sv = {
     dynamic:"Fysiskt hälsolaboratorium", freeLabel:"Gratis diagnoser",
     listen:"Lyssna", copy:"Kopiera", share:"Dela", back:"Tillbaka", rating:"Din bedömning",
     start_btn:"🧬 Starta fysisk kontroll",
-    consent_title:"Förhandssamtycke",
-    consent_text:"Detta kommer att simulera fingerplacering, andning och promenad. Inga data kommer att lagras.",
-    consent_btn:"✅ Jag godkänner och startar", refuse_btn:"✖ Avvisa",
     sensor1:"Puls & Syre", tool1:"📸 Kamera",
     sensor2:"Andning & Ljud", tool2:"🎙️ Mikrofon",
     sensor3:"Balans & Gång", tool3:"📳 Rörelse",
@@ -1261,124 +1170,312 @@ translations.sv = {
     admin_on:"👑 Administratörsläge aktiverat", step:"Steg", finger_ok:"✅ Finger upptäckt", finger_wait:"⏳ Placera fingret på kameran", finger_fail:"❌ Finger inte upptäckt"
 };
 
-// Fill remaining languages (34) with English as fallback
-var remainingLangs = ["bn","pa","mr","ta","te","gu","sw","ha","yo","yue","my","uk","sd","uz","am","tl","ro","he","el","cs","hu","bg","hr","sk","da","fi","no","sr","lt","lv","et","sl"];
-remainingLangs.forEach(function(code) {
-    translations[code] = translations.en;
-});
-
 // ============================================================
-// LANGUAGE FUNCTIONS
+// 🌐 نظام الترجمة عبر الإنترنت (مأخوذ من PhysicSens مع تعديلات)
 // ============================================================
-var currentLang = 'ar';
 
-function t(key, vars) {
-    var str = translations[currentLang]?.[key] ?? translations.en?.[key] ?? key;
-    if (vars) {
-        for (var k in vars) {
-            str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
-        }
-    }
-    return str;
+var CACHE_KEY = 'healthTransCacheV6';
+var translationCache = {};
+
+function loadCache() {
+    try {
+        var cached = localStorage.getItem(CACHE_KEY);
+        if (cached) translationCache = JSON.parse(cached);
+    } catch(e) { translationCache = {}; }
 }
 
+function saveCache() {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(translationCache));
+    } catch(e) {}
+}
+
+function getCachedTranslation(text, targetLang) {
+    var key = targetLang + '|' + text;
+    return translationCache[key] || null;
+}
+
+function setCachedTranslation(text, targetLang, translation) {
+    var key = targetLang + '|' + text;
+    translationCache[key] = translation;
+    saveCache();
+}
+
+async function translateText(text, targetLang, sourceLang) {
+    sourceLang = sourceLang || 'en';
+    if (targetLang === sourceLang) return text;
+    
+    var cached = getCachedTranslation(text, targetLang);
+    if (cached) return cached;
+    
+    try {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 8000);
+        var response = await fetch(
+            'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + 
+            '&langpair=' + sourceLang + '|' + targetLang,
+            { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        var data = await response.json();
+        if (data.responseData && data.responseData.translatedText) {
+            var translated = data.responseData.translatedText;
+            // نتحقق من أن الترجمة صالحة ولا تحتوي على تحذيرات
+            if (translated && translated !== text && 
+                !translated.includes('an error') && 
+                !translated.toLowerCase().includes('warning') &&
+                !translated.toLowerCase().includes('limit')) {
+                setCachedTranslation(text, targetLang, translated);
+                return translated;
+            }
+        }
+    } catch(e) {
+        // نهمش أي خطأ بصمت، ولا نعرض أي رسالة للمستخدم
+        console.log('Translation silently failed for:', text);
+    }
+    // Fallback إلى النص الأصلي (الإنجليزية)
+    return text;
+}
+
+// ============================================================
+// ⚙️ دالة الترجمة الأساسية (مأخوذة من PhysicSens)
+// ============================================================
+
+var currentLang = localStorage.getItem('physicLang') || 'ar';
+var transCache = JSON.parse(localStorage.getItem('transCache') || '{}');
+
+function t(key, vars) {
+    try {
+        if (translations[currentLang] && translations[currentLang][key]) {
+            var str = translations[currentLang][key];
+            if (vars) {
+                for (var k in vars) {
+                    str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+                }
+            }
+            return str;
+        }
+        var cacheKey = currentLang + '|' + key;
+        if (transCache[cacheKey]) {
+            var str = transCache[cacheKey];
+            if (vars) {
+                for (var k in vars) {
+                    str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+                }
+            }
+            return str;
+        }
+        var str = (translations.en && translations.en[key]) || key;
+        if (vars) {
+            for (var k in vars) {
+                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+            }
+        }
+        return str;
+    } catch(e) {
+        return key;
+    }
+}
+
+async function tt(text, targetLang) {
+    if (!targetLang || targetLang === 'en') return text;
+    
+    // للغات غير المترجمة يدوياً (34 لغة)، نترجم عبر الإنترنت
+    if (MANUAL_LANGS.indexOf(targetLang) === -1) {
+        try {
+            var cacheKey = targetLang + '|' + text;
+            if (transCache[cacheKey]) return transCache[cacheKey];
+            var translated = await translateText(text, targetLang, 'en');
+            if (translated && translated !== text) {
+                transCache[cacheKey] = translated;
+                localStorage.setItem('transCache', JSON.stringify(transCache));
+                return translated;
+            }
+        } catch(e) {
+            // نهمش أي خطأ
+        }
+        return text; // Fallback إلى النص الإنجليزي
+    }
+    
+    // للغات المترجمة يدوياً، نستخدم الترجمات المخزنة
+    try {
+        var cacheKey = targetLang + '|' + text;
+        if (transCache[cacheKey]) return transCache[cacheKey];
+        if (translations[targetLang] && translations[targetLang][text]) {
+            transCache[cacheKey] = translations[targetLang][text];
+            localStorage.setItem('transCache', JSON.stringify(transCache));
+            return translations[targetLang][text];
+        }
+        var translated = await translateText(text, targetLang, 'en');
+        if (translated && translated !== text) {
+            transCache[cacheKey] = translated;
+            localStorage.setItem('transCache', JSON.stringify(transCache));
+            return translated;
+        }
+    } catch(e) {}
+    return text;
+}
+
+// ============================================================
+// 📝 تطبيق الترجمات على الواجهة (مأخوذ من PhysicSens مع تعديل)
+// ============================================================
+
+async function applyTranslations() {
+    try {
+        var left = Math.max(0, 3 - freeUsed);
+        
+        var texts = {
+            dynamic: t('dynamic'),
+            freeLabel: t('freeLabel'),
+            rating: t('rating'),
+            start_btn: t('start_btn'),
+            listen: t('listen'),
+            copy: t('copy'),
+            share: t('share'),
+            back: t('back'),
+            secret_title: t('secret_title'),
+            secret_sub: t('secret_sub'),
+            sensor1: t('sensor1'),
+            sensor2: t('sensor2'),
+            sensor3: t('sensor3'),
+            sensor4: t('sensor4'),
+            tool1: t('tool1'),
+            tool2: t('tool2'),
+            tool3: t('tool3'),
+            tool4: t('tool4'),
+            instr1: t('instr1'),
+            instr2: t('instr2'),
+            instr3: t('instr3'),
+            instr4: t('instr4'),
+            wait: t('wait'),
+            measuring: t('measuring'),
+            done_pulse: t('done_pulse'),
+            sub_pulse: t('sub_pulse'),
+            done_breath: t('done_breath'),
+            sub_breath: t('sub_breath'),
+            done_balance: t('done_balance'),
+            sub_balance: t('sub_balance'),
+            done_temp: t('done_temp'),
+            sub_temp: t('sub_temp'),
+            measure: t('measure'),
+            retry: t('retry'),
+            final_green: t('final_green'),
+            final_green_sub: t('final_green_sub'),
+            final_yellow: t('final_yellow'),
+            final_yellow_sub: t('final_yellow_sub'),
+            final_orange: t('final_orange'),
+            final_orange_sub: t('final_orange_sub'),
+            legal: t('legal'),
+            pack1: t('pack1'),
+            pack5: t('pack5'),
+            pack15: t('pack15'),
+            admin_on: t('admin_on'),
+            step: t('step'),
+            finger_ok: t('finger_ok'),
+            finger_wait: t('finger_wait'),
+            finger_fail: t('finger_fail')
+        };
+        
+        var translated = {};
+        var keys = Object.keys(texts);
+        var promises = keys.map(async function(key) {
+            var result = await tt(texts[key], currentLang);
+            return { key: key, result: result };
+        });
+        
+        var results = await Promise.all(promises);
+        results.forEach(function(r) {
+            translated[r.key] = r.result;
+        });
+        
+        // تطبيق النصوص المترجمة على العناصر
+        document.getElementById('dynamicTitle').textContent = translated.dynamic;
+        document.getElementById('freeLabel').textContent = translated.freeLabel;
+        document.getElementById('ratingLabel').textContent = translated.rating;
+        document.getElementById('startBtn').innerHTML = translated.start_btn;
+        document.getElementById('listenLabel').textContent = translated.listen;
+        document.getElementById('copyLabel').textContent = translated.copy;
+        document.getElementById('shareLabel').textContent = translated.share;
+        document.getElementById('backLabel').textContent = translated.back;
+        document.getElementById('secretTitle').textContent = translated.secret_title;
+        document.getElementById('secretSub').textContent = translated.secret_sub;
+        
+        var sensorIcons = ['🫀','🎤','🧍','🌡️'];
+        var sensorKeys = ['sensor1','sensor2','sensor3','sensor4'];
+        for (var i = 1; i <= 4; i++) {
+            var el = document.getElementById('sensorName' + i);
+            if (el) {
+                el.innerHTML = '<span class="sensor-icon">' + sensorIcons[i-1] + '</span> ' + translated[sensorKeys[i-1]];
+            }
+            var toolEl = document.getElementById('sensorTool' + i);
+            if (toolEl) toolEl.textContent = translated['tool' + i];
+            var instrEl = document.getElementById('instr' + i);
+            if (instrEl) instrEl.textContent = translated['instr' + i];
+        }
+        
+        var btns = document.querySelectorAll('.pack-btn');
+        if (btns.length >= 3) {
+            btns[0].textContent = translated.pack1;
+            btns[1].textContent = translated.pack5;
+            btns[2].textContent = translated.pack15;
+        }
+        document.getElementById('legalLine').innerHTML = '⚠️ ' + translated.legal;
+        
+        updateCreditsDisplay();
+        updateUI();
+        
+        console.log('✅ Translations applied successfully for:', currentLang);
+    } catch(e) {
+        console.log('⚠️ Error applying translations:', e);
+    }
+}
+
+// ============================================================
+// 🌐 بناء قائمة اللغات
+// ============================================================
 function buildLangSelect() {
     var sel = document.getElementById('langSelect');
     sel.innerHTML = '';
     langList.forEach(function(code) {
         var opt = document.createElement('option');
         opt.value = code;
-        opt.textContent = langNative[code] || code;
+        var isManual = MANUAL_LANGS.indexOf(code) !== -1;
+        var status = isManual ? '📖' : '🌐';
+        var label = langNative[code] || code;
+        opt.textContent = label + ' ' + status;
         if (code === currentLang) opt.selected = true;
         sel.appendChild(opt);
     });
-    sel.onchange = function() {
-        currentLang = this.value;
-        var dir = (currentLang === 'ar' || currentLang === 'fa' || currentLang === 'ur' || currentLang === 'he') ? 'rtl' : 'ltr';
-        document.documentElement.dir = dir;
-        applyTranslations();
+    sel.onchange = async function() {
+        var newLang = sel.value;
+        if (newLang === currentLang) return;
+        currentLang = newLang;
+        localStorage.setItem('physicLang', currentLang);
+        var rtlLangs = ['ar','fa','ur','he'];
+        document.dir = rtlLangs.indexOf(currentLang) !== -1 ? 'rtl' : 'ltr';
+        await applyTranslations();
         updateUI();
+        updateCreditsDisplay();
+        if (document.getElementById('labArea').style.display === 'block') {
+            for (var i = 1; i <= 4; i++) {
+                var measureBtn = document.getElementById('measure' + i);
+                if (measureBtn && !measureBtn.disabled) {
+                    measureBtn.textContent = t('measure');
+                }
+                var retryBtn = document.getElementById('retry' + i);
+                if (retryBtn) retryBtn.textContent = t('retry');
+            }
+        }
     };
 }
 
-function applyTranslations() {
-    document.getElementById('dynamicTitle').textContent = t('dynamic');
-    document.getElementById('freeLabel').textContent = t('freeLabel');
-    document.getElementById('ratingLabel').textContent = t('rating');
-    document.getElementById('startBtn').innerHTML = t('start_btn');
-    document.getElementById('consentTitle').textContent = t('consent_title');
-    document.getElementById('consentMessage').textContent = t('consent_text');
-    document.getElementById('consentBtn').innerHTML = t('consent_btn');
-    document.getElementById('refuseBtn').innerHTML = t('refuse_btn');
-    document.getElementById('listenLabel').textContent = t('listen');
-    document.getElementById('copyLabel').textContent = t('copy');
-    document.getElementById('shareLabel').textContent = t('share');
-    document.getElementById('backLabel').textContent = t('back');
-    document.getElementById('secretTitle').textContent = t('secret_title');
-    document.getElementById('secretSub').textContent = t('secret_sub');
-    
-    for (var i = 1; i <= 4; i++) {
-        var icons = ['🫀','🎤','🧍','🌡️'];
-        document.getElementById('sensorName'+i).innerHTML = '<span class="sensor-icon">'+icons[i-1]+'</span> '+t('sensor'+i);
-        document.getElementById('sensorTool'+i).textContent = t('tool'+i);
-        document.getElementById('instr'+i).textContent = t('instr'+i);
-    }
-    var btns = document.querySelectorAll('.pack-btn');
-    if (btns.length >= 3) {
-        btns[0].textContent = t('pack1');
-        btns[1].textContent = t('pack5');
-        btns[2].textContent = t('pack15');
-    }
-    document.getElementById('legalLine').innerHTML = '⚠️ '+t('legal');
-    updateUI();
-}
-
-function updateUI() {
-    for (var i = 1; i <= 4; i++) {
-        var card = document.getElementById('card'+i);
-        var measureBtn = document.getElementById('measure'+i);
-        if (!card.classList.contains('done')) {
-            measureBtn.textContent = t('measure');
-        } else {
-            measureBtn.textContent = '✅ تم';
-        }
-        document.getElementById('retry'+i).textContent = t('retry');
-    }
-    var finalBox = document.getElementById('finalVerdict');
-    if (finalBox.classList.contains('show')) {
-        var classes = finalBox.className.split(' ');
-        var level = classes.find(function(c) { return c === 'green' || c === 'yellow' || c === 'orange'; });
-        if (level === 'green') {
-            document.getElementById('finalText').textContent = t('final_green');
-            document.getElementById('finalSub').textContent = t('final_green_sub');
-        } else if (level === 'yellow') {
-            document.getElementById('finalText').textContent = t('final_yellow');
-            document.getElementById('finalSub').textContent = t('final_yellow_sub');
-        } else if (level === 'orange') {
-            document.getElementById('finalText').textContent = t('final_orange');
-            document.getElementById('finalSub').textContent = t('final_orange_sub');
-        }
-    }
-}
-
 // ============================================================
-// DATE/TIME/LOCATION/DEVICE
+// بقية الكود (الحساسات، الرصيد، الكاميرا، إلخ) دون تغيير كبير
 // ============================================================
-function updateDateTime() {
-    var now = new Date();
-    document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-GB');
-    document.getElementById('timeDisplay').textContent = now.toLocaleTimeString('en-GB');
-}
-setInterval(updateDateTime, 1000);
-updateDateTime();
 
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-        function(pos) { document.getElementById('locationDisplay').textContent = pos.coords.latitude.toFixed(2)+', '+pos.coords.longitude.toFixed(2); },
-        function() { document.getElementById('locationDisplay').textContent = '❌'; }
-    );
-}
-
+var freeCredits = 3;
+var paidCredits = getSecureBalance();
+var freeUsed = parseInt(localStorage.getItem('physicFree') || '0');
 var deviceId = localStorage.getItem('healthDeviceId');
 if (!deviceId) {
     deviceId = 'PHS-' + Math.random().toString(36).slice(2,8).toUpperCase();
@@ -1386,28 +1483,20 @@ if (!deviceId) {
 }
 document.getElementById('deviceId').textContent = deviceId;
 
-function copyLink() {
-    navigator.clipboard.writeText(window.location.href).then(function() {
-        showToast('✅ تم نسخ الرابط');
-    }).catch(function() {
-        showToast('⚠️ تعذر النسخ');
-    });
-}
-
-// ============================================================
-// CREDITS
-// ============================================================
-var freeCredits = 3;
-var paidCredits = getSecureBalance();
-
 function updateCreditsDisplay() {
     var total = isAdmin ? 999 : (freeCredits + paidCredits);
     document.getElementById('freeCount').textContent = total;
+    document.getElementById('freeBadge').innerHTML = '🎁 ' + t('freeLabel') + ': ' + (isAdmin ? 999 : (freeCredits + paidCredits));
+    if (isAdmin) {
+        document.getElementById('adminHint').innerHTML = '👑 ' + t('admin_on');
+    } else {
+        document.getElementById('adminHint').innerHTML = '';
+    }
 }
 
 function buyPack(amount) {
     if (isAdmin) {
-        showToast('👑 ' + (currentLang === 'ar' ? 'المدير مفعل، لا حاجة للشراء' : 'Admin active, no need to buy'));
+        showToast('👑 ' + t('admin_on'));
         return;
     }
     var price = amount === 1 ? 2 : (amount === 5 ? 8 : 20);
@@ -1430,13 +1519,51 @@ function activateCode() {
         updateCreditsDisplay();
         showToast('✅ تمت إضافة 50 تشخيص');
     } else {
-        showToast('❌ ' + (currentLang === 'ar' ? 'كود غير صالح' : 'Invalid code'));
+        showToast('❌ ' + t('invalid'));
     }
     document.getElementById('codeInput').value = '';
 }
 
+function showToast(msg) {
+    var existing = document.querySelector('.toast-custom');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'toast-custom';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) scale(0.9)';
+        setTimeout(function() { toast.remove(); }, 400);
+    }, 3000);
+}
+
+function updateDateTime() {
+    var now = new Date();
+    document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-GB');
+    document.getElementById('timeDisplay').textContent = now.toLocaleTimeString('en-GB');
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        function(pos) { document.getElementById('locationDisplay').textContent = pos.coords.latitude.toFixed(2)+', '+pos.coords.longitude.toFixed(2); },
+        function() { document.getElementById('locationDisplay').textContent = '❌'; }
+    );
+}
+
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        showToast('✅ تم نسخ الرابط');
+    }).catch(function() {
+        showToast('⚠️ تعذر النسخ');
+    });
+}
+
 // ============================================================
-// CAMERA FINGER DETECTION
+// CAMERA FINGER DETECTION (نفس الكود السابق)
 // ============================================================
 var cameraStreams = {};
 var fingerDetected = false;
@@ -1475,7 +1602,7 @@ function startCameraForSensor(sensorId) {
                 if (status) {
                     status.innerHTML = '<span class="ok">✅ ' + t('finger_ok') + '</span>';
                 }
-                showToast('👆 ' + (currentLang === 'ar' ? 'تم كشف الإصبع!' : 'Finger detected!'));
+                showToast('👆 ' + t('finger_ok'));
             }, 2000);
         })
         .catch(function() {
@@ -1495,7 +1622,7 @@ function stopCamera(sensorId) {
 }
 
 // ============================================================
-// DIAGNOSIS LOGIC
+// DIAGNOSIS LOGIC (بدون موافقة مسبقة)
 // ============================================================
 var sensorResults = [false, false, false, false];
 var sensorValues = [null, null, null, null];
@@ -1503,14 +1630,14 @@ var measuring = [false, false, false, false];
 var resultColors = ['', '', '', ''];
 var completedCount = 0;
 
+document.getElementById('startBtn').addEventListener('click', function() {
+    startDiagnosis();
+});
+
 function startDiagnosis() {
-    if (!consentGiven) {
-        showToast('❗ ' + (currentLang === 'ar' ? 'وافق أولاً' : 'Agree first'));
-        return;
-    }
     var total = isAdmin ? 999 : (freeCredits + paidCredits);
     if (total <= 0) {
-        showToast('⚠️ ' + (currentLang === 'ar' ? 'انتهى الرصيد، اشترِ باقة' : 'Credits exhausted, buy a pack'));
+        showToast('⚠️ ' + t('no_credits'));
         return;
     }
     if (!isAdmin) {
@@ -1544,7 +1671,7 @@ function startDiagnosis() {
         startCameraForSensor(1);
     }, 500);
     
-    showToast('📌 ' + (currentLang === 'ar' ? 'ضع إصبعك على الكاميرا الخلفية' : 'Place your finger on the rear camera'));
+    showToast('📌 ' + t('finger_wait'));
 }
 
 function measureSensor(idx) {
@@ -1552,7 +1679,7 @@ function measureSensor(idx) {
     if (sensorResults[idx-1]) resetSensor(idx);
 
     if (idx === 1 && !fingerDetected) {
-        showToast('👆 ' + (currentLang === 'ar' ? 'ضع إصبعك على الكاميرا أولاً!' : 'Place your finger on the camera first!'));
+        showToast('👆 ' + t('finger_wait'));
         return;
     }
 
@@ -1733,7 +1860,7 @@ document.getElementById('copyBtn').addEventListener('click', function() {
     var text = document.getElementById('finalText').textContent + ' ' + document.getElementById('finalSub').textContent;
     if (text) {
         navigator.clipboard.writeText(text);
-        showToast('📋 ' + (currentLang === 'ar' ? 'تم النسخ' : 'Copied'));
+        showToast('📋 ' + t('copied'));
     }
 });
 
@@ -1748,7 +1875,7 @@ document.getElementById('shareBtn').addEventListener('click', function() {
             }).catch(function() {});
         } else {
             navigator.clipboard.writeText(text);
-            showToast('📤 ' + (currentLang === 'ar' ? 'تم النسخ للمشاركة' : 'Copied for sharing'));
+            showToast('📤 ' + t('shared'));
         }
     }
 });
@@ -1785,64 +1912,75 @@ function rate(n) {
     stars.forEach(function(s, i) {
         s.style.color = i < n ? '#f5b81b' : '#475569';
     });
-    showToast('⭐ ' + (currentLang === 'ar' ? 'شكراً لتقييمك!' : 'Thank you!'));
+    showToast('⭐ ' + t('rating'));
 }
 
-// ============================================================
-// TOAST
-// ============================================================
-function showToast(msg) {
-    var existing = document.querySelector('.toast-custom');
-    if (existing) existing.remove();
-    var toast = document.createElement('div');
-    toast.className = 'toast-custom';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(function() {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(-50%) scale(0.9)';
-        setTimeout(function() { toast.remove(); }, 400);
-    }, 3000);
+function updateUI() {
+    for (var i = 1; i <= 4; i++) {
+        var card = document.getElementById('card'+i);
+        var measureBtn = document.getElementById('measure'+i);
+        if (!card.classList.contains('done')) {
+            measureBtn.textContent = t('measure');
+        } else {
+            measureBtn.textContent = '✅ تم';
+        }
+        document.getElementById('retry'+i).textContent = t('retry');
+    }
+    var finalBox = document.getElementById('finalVerdict');
+    if (finalBox.classList.contains('show')) {
+        var classes = finalBox.className.split(' ');
+        var level = classes.find(function(c) { return c === 'green' || c === 'yellow' || c === 'orange'; });
+        if (level === 'green') {
+            document.getElementById('finalText').textContent = t('final_green');
+            document.getElementById('finalSub').textContent = t('final_green_sub');
+        } else if (level === 'yellow') {
+            document.getElementById('finalText').textContent = t('final_yellow');
+            document.getElementById('finalSub').textContent = t('final_yellow_sub');
+        } else if (level === 'orange') {
+            document.getElementById('finalText').textContent = t('final_orange');
+            document.getElementById('finalSub').textContent = t('final_orange_sub');
+        }
+    }
 }
-
-// ============================================================
-// CONSENT
-// ============================================================
-var consentGiven = false;
-
-document.getElementById('startBtn').addEventListener('click', function() {
-    document.getElementById('consentOverlay').classList.add('show');
-    applyTranslations();
-});
-
-document.getElementById('consentBtn').addEventListener('click', function() {
-    consentGiven = true;
-    document.getElementById('consentOverlay').classList.remove('show');
-    startDiagnosis();
-});
-
-document.getElementById('refuseBtn').addEventListener('click', function() {
-    document.getElementById('consentOverlay').classList.remove('show');
-    showToast('❌ ' + (currentLang === 'ar' ? 'تم الرفض، يمكنك إعادة المحاولة' : 'Refused, you can try again'));
-});
 
 // ============================================================
 // INIT
 // ============================================================
-buildLangSelect();
-applyTranslations();
-updateCreditsDisplay();
-document.getElementById('startBtn').disabled = false;
+async function initApp() {
+    loadCache();
+    var savedLang = localStorage.getItem('physicLang');
+    if (savedLang && langList.indexOf(savedLang) !== -1) {
+        currentLang = savedLang;
+    } else {
+        currentLang = 'ar';
+    }
+    document.getElementById('langSelect').value = currentLang;
+    
+    buildLangSelect();
+    await applyTranslations();
+    updateCreditsDisplay();
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(pos) { document.getElementById('locationDisplay').textContent = pos.coords.latitude.toFixed(2)+', '+pos.coords.longitude.toFixed(2); },
+            function() { document.getElementById('locationDisplay').textContent = '❌'; }
+        );
+    }
+    
+    console.log('✅ Physical Health Lab V2.5 – Dynamic Translation (smooth like PhysicSens)');
+    console.log('📖 20 Manual + 🌐 34 Online = 54 Languages');
+    console.log('🔒 Consent screen removed');
+    console.log('🔄 Fallback to English on translation failure');
+    console.log('🚫 All MyMemory warnings are silently suppressed');
+}
 
-console.log('🧬 Physical Health Lab V2.4 - FINAL');
-console.log('✅ 20 لغة مترجمة يدوياً + 34 لغة عبر النت');
-console.log('🔐 الحزمة الأمنية الخماسية مفعلة');
-console.log('📱 ربط العداد بـ Device ID: ' + deviceId);
-console.log('🔄 4 حساسات مع كاميرا حية للإصبع');
-console.log('👆 المستخدم يرى إصبعه على الشاشة');
-console.log('⚖️ سطر قانوني ثابت تحت كل نتيجة');
-console.log('📝 شاشة الموافقة تظهر باللغة المختارة');
+if (document.readyState === 'complete') {
+    initApp();
+} else {
+    document.addEventListener('DOMContentLoaded', initApp);
+}
 </script>
 </body>
 </html>
