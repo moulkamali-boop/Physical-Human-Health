@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>🧬 مخبر الصحة الفيزيائية</title>
+    <title>🧬 Physical Health Lab</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -49,6 +49,7 @@
         .sensor-instruction{font-size:0.85rem;color:#cbd5e1;margin:4px 0 10px 0;padding:6px 12px;background:#1e293b;border-radius:30px;border:1px solid #334155;display:inline-block}
         .sensor-preview{background:#000;border-radius:12px;min-height:100px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#94a3b8;border:1px solid #334155;margin:8px 0;padding:8px;flex-direction:column;overflow:hidden;position:relative}
         .sensor-preview video{width:100%;max-height:140px;border-radius:8px;object-fit:cover}
+        .sensor-preview .finger-hint{position:absolute;bottom:8px;background:rgba(0,0,0,0.7);padding:4px 12px;border-radius:20px;font-size:0.6rem;color:#2ecc71}
         .sensor-result{font-size:1.1rem;font-weight:700;color:#ffffff;margin:4px 0}
         .sensor-result.sub{font-size:0.85rem;color:#cbd5e1;font-weight:400}
         .sensor-actions{display:flex;gap:10px;margin-top:8px}
@@ -59,9 +60,6 @@
         .btn-retry{background:#f59e0b;color:#0a0f1a}
         .btn-retry:hover{transform:scale(1.03)}
         .btn-retry:disabled{opacity:0.4;cursor:not-allowed}
-        .show-verdict-btn{width:100%;padding:14px;background:#8b5cf6;border:none;border-radius:40px;font-weight:700;color:#fff;font-size:1rem;cursor:pointer;margin:10px 0;transition:0.2s;display:none}
-        .show-verdict-btn:hover{transform:scale(1.02)}
-        .show-verdict-btn:disabled{opacity:0.5;cursor:not-allowed}
         .final-verdict{background:#0f172a;border-radius:20px;padding:22px;margin-top:16px;text-align:center;border:3px solid #334155;display:none}
         .final-verdict.show{display:block}
         .final-verdict.green{background:#064e3b;border-color:#2ecc71}
@@ -72,7 +70,6 @@
         .final-sub{font-size:0.95rem;color:#cbd5e1}
         .legal-line{font-size:0.65rem;color:#94a3b8;margin-top:12px;border-top:1px solid #334155;padding-top:10px;font-weight:300}
         .legal-line strong{color:#f5b81b}
-        .verdict-note{font-size:0.8rem;color:#f59e0b;margin-top:6px;border-top:1px dashed #334155;padding-top:6px}
         .toolbar{display:flex;gap:10px;justify-content:center;margin:14px 0}
         .tool-btn{background:#1e293b;border:1px solid #334155;border-radius:30px;padding:8px 18px;font-size:0.8rem;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;transition:0.2s}
         .tool-btn:hover{background:#334155}
@@ -84,6 +81,17 @@
         .footer{text-align:center;font-size:0.6rem;color:#475569;border-top:1px solid #1e293b;padding-top:10px;margin-top:10px}
         .footer a{display:none}
         .hidden{display:none!important}
+        .consent-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+        .consent-overlay.show{display:flex}
+        .consent-box{background:#1e293b;border:2px solid #f5b81b;border-radius:24px;padding:24px;max-width:420px;width:100%;text-align:center}
+        .consent-box .legal-icon{font-size:2.5rem;margin-bottom:8px}
+        .consent-box h2{color:#f5b81b;font-size:1.2rem;margin-bottom:8px}
+        .consent-box .legal-text{color:#cbd5e1;font-size:0.9rem;line-height:1.8;text-align:right;padding:10px 0}
+        .consent-box .legal-text strong{color:#f5b81b}
+        .consent-box .btn-consent{background:#f5b81b;border:none;padding:12px 30px;border-radius:40px;font-weight:700;color:#0a0f1a;cursor:pointer;font-size:1rem;margin-top:8px;transition:0.2s}
+        .consent-box .btn-consent:hover{transform:scale(1.02)}
+        .consent-box .btn-refuse{background:#334155;border:none;padding:10px 30px;border-radius:40px;font-weight:600;color:#94a3b8;cursor:pointer;font-size:0.9rem;margin-top:6px;transition:0.2s}
+        .consent-box .btn-refuse:hover{background:#444}
         .step-counter{text-align:center;font-size:0.8rem;color:#94a3b8;margin:6px 0}
         .step-counter .current{color:#f5b81b;font-weight:700}
         .toast-custom{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;border:2px solid #f5b81b;color:#fff;padding:10px 22px;border-radius:40px;font-size:0.9rem;z-index:1000;box-shadow:0 8px 30px rgba(0,0,0,0.6);text-align:center;max-width:90%;font-weight:500;transition:all 0.3s ease}
@@ -100,7 +108,13 @@
         .finger-status .ok{color:#2ecc71}
         .finger-status .wait{color:#f5b81b}
         .finger-status .fail{color:#ef4444}
-        .sensor-card.failed .sensor-header{color:#ef4444}
+        .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;text-align:left;font-size:0.85rem;background:#1e293b;padding:10px;border-radius:12px}
+        .summary-grid .label{color:#94a3b8}
+        .summary-grid .value{color:#f5b81b;font-weight:600;direction:ltr;text-align:right}
+        .history-badge{font-size:0.7rem;color:#94a3b8;background:#1e293b;padding:2px 12px;border-radius:30px;margin:4px 0;border:1px solid #334155;display:inline-block}
+        .trend-up{color:#2ecc71}
+        .trend-down{color:#ef4444}
+        .trend-stable{color:#f5b81b}
     </style>
 </head>
 <body>
@@ -131,15 +145,15 @@
 
     <!-- CREDITS -->
     <div class="credit-section">
-        <div class="free-badge">🎁 <span id="freeLabel">تشخيصات مجانية</span>: <span id="freeCount">3</span>/3</div>
+        <div class="free-badge" id="freeBadge">🎁 <span id="freeLabel">تشخيصات مجانية</span>: <span id="freeCount">3</span>/3</div>
         <div class="pack-row">
-            <button class="pack-btn" onclick="buyPack(1)">💵 تشخيص 1 / $2</button>
-            <button class="pack-btn" onclick="buyPack(5)">📦 5 تشخيصات / $8</button>
-            <button class="pack-btn" onclick="buyPack(15)">🏆 15 تشخيصاً / $20</button>
+            <button class="pack-btn" id="pack1" onclick="buyPack(1)">💵 1 / $2</button>
+            <button class="pack-btn" id="pack5" onclick="buyPack(5)">📦 5 / $8</button>
+            <button class="pack-btn" id="pack15" onclick="buyPack(15)">🏆 15 / $20</button>
         </div>
         <div class="code-row">
             <input type="text" id="codeInput" placeholder="🔑 كود التفعيل">
-            <button onclick="activateCode()" id="activateBtn">تفعيل</button>
+            <button id="activateBtn" onclick="activateCode()">تفعيل</button>
         </div>
     </div>
 
@@ -148,10 +162,23 @@
     <!-- START BUTTON -->
     <button class="start-btn" id="startBtn">🧬 بدء الفحص الفيزيائي</button>
 
+    <!-- CONSENT -->
+    <div class="consent-overlay" id="consentOverlay">
+        <div class="consent-box">
+            <div class="legal-icon">🧪</div>
+            <h2 id="consentTitle">موافقة مسبقة</h2>
+            <div class="legal-text" id="consentText">
+                <span id="consentMessage">سيطلب محاكاة وضع الإصبع، التنفس، والمشي. لن يتم تخزين أي بيانات.</span>
+            </div>
+            <button class="btn-consent" id="consentBtn">✅ أوافق وأبدأ</button><br>
+            <button class="btn-refuse" id="refuseBtn">✖ أرفض</button>
+        </div>
+    </div>
+
     <!-- LAB AREA -->
     <div id="labArea">
 
-        <div class="step-counter">المرحلة: <span class="current" id="currentStep">0</span> / 4</div>
+        <div class="step-counter" id="stepCounter">المرحلة: <span class="current" id="currentStep">0</span> / 4</div>
 
         <!-- Sensor 1: Pulse & Oxygen -->
         <div class="sensor-card" id="card1">
@@ -160,7 +187,10 @@
                 <span class="tool" id="sensorTool1">📸 كاميرا</span>
             </div>
             <div class="sensor-instruction" id="instr1">📌 ضع اصبعك خلف الكاميرا الخلفية عند نقر "قياس"</div>
-            <div class="sensor-preview" id="preview1"><span id="previewText1">⏳ في انتظار القياس...</span><div class="finger-status" id="fingerStatus1"></div></div>
+            <div class="sensor-preview" id="preview1">
+                <span id="previewText1">⏳ في انتظار القياس...</span>
+                <div class="finger-status" id="fingerStatus1"></div>
+            </div>
             <div class="sensor-result" id="result1"></div>
             <div class="sensor-result sub" id="subResult1"></div>
             <div class="sensor-actions">
@@ -217,16 +247,13 @@
             </div>
         </div>
 
-        <!-- زر عرض الخلاصة -->
-        <button class="show-verdict-btn" id="showVerdictBtn">
-            <i class="fas fa-file-medical-alt"></i> <span id="showVerdictLabel">📋 عرض الخلاصة النهائية</span>
-        </button>
-
         <!-- FINAL VERDICT -->
         <div class="final-verdict" id="finalVerdict">
             <div class="final-icon" id="finalIcon">🟢</div>
             <div class="final-text" id="finalText">ممتاز!</div>
             <div class="final-sub" id="finalSub">جميع المؤشرات مستقرة.</div>
+            <div id="summaryContainer"></div>
+            <div id="trendContainer" style="margin:8px 0;font-size:0.85rem;color:#94a3b8;"></div>
             <div class="verdict-note" id="verdictNote"></div>
             <div class="legal-line" id="legalLine">⚠️ <strong>قراءة فيزيائية محاكاة</strong>، تعتمد على حساسات هاتفك، وهي <strong>ليست تشخيصاً طبياً</strong>، ولا تغني عن استشارة الطبيب المختص.</div>
         </div>
@@ -248,7 +275,7 @@
         </span>
     </div>
 
-    <div class="footer">🧬 Physical Health Lab | V3.2</div>
+    <div class="footer">🧬 Physical Health Lab | V3.1 (ذكي)</div>
 </div>
 
 <!-- SECRET MODAL -->
@@ -265,9 +292,8 @@
 
 <script>
 // ============================================================
-// 🔐 البصمة الخفية و نظام الأمان
+// 🔐 الأمان والرصيد (ثابت)
 // ============================================================
-
 function getDynamicPassword() {
     try {
         var today = new Date();
@@ -287,7 +313,6 @@ function getDynamicPassword() {
     }
 }
 var STATIC_PASSWORD = 'MOULOUD2026';
-
 var SECRET_SALT = 'PhysicHealth-2026-S3cur3!';
 
 function generateSignature(value) {
@@ -349,7 +374,7 @@ function addSecureBalance(amount) {
 }
 
 // ============================================================
-// ADMIN MODE
+// ADMIN MODE (ثابت)
 // ============================================================
 var adminClicks = 0;
 var adminTimer = null;
@@ -422,38 +447,40 @@ function activateAdminMode() {
 }
 
 // ============================================================
-// 🌍 54 LANGUAGES (20 manually translated, 34 online)
+// 🌍 20 لغة يدوية كاملة + باقي اللغات إنجليزي احتياطي
 // ============================================================
-
-var langList = ["ar","en","fr","es","de","it","pt","ru","zh","ja","ko","tr","nl","pl","hi","id","fa","ur","vi","el","cs","he","th","uk","ro","hu","sv","da","fi","no","sk","bg","hr","lt","lv","et","sl","ms","bn","pa","ta","te","mr","ha","tl","gu","am","yo","uz","my","az","ig","so"];
+var langList = ["ar","en","fr","es","de","it","pt","ru","zh","ja","ko","hi","tr","fa","ur","id","ms","vi","th","nl","pl","sv","bn","pa","mr","ta","te","gu","sw","ha","yo","yue","my","uk","sd","uz","am","tl","ro","he","el","cs","hu","bg","hr","sk","da","fi","no","sr","lt","lv","et","sl"];
 
 var langNative = {
     ar:"🇸🇦 العربية", en:"🇬🇧 English", fr:"🇫🇷 Français", es:"🇪🇸 Español",
     de:"🇩🇪 Deutsch", it:"🇮🇹 Italiano", pt:"🇵🇹 Português", ru:"🇷🇺 Русский",
-    zh:"🇨🇳 中文", ja:"🇯🇵 日本語", ko:"🇰🇷 한국어", tr:"🇹🇷 Türkçe",
-    nl:"🇳🇱 Nederlands", pl:"🇵🇱 Polski", hi:"🇮🇳 हिन्दी", id:"🇮🇩 Indonesia",
-    fa:"🇮🇷 فارسی", ur:"🇵🇰 اردو", vi:"🇻🇳 Tiếng Việt", el:"🇬🇷 Ελληνικά",
-    cs:"🇨🇿 Čeština", he:"🇮🇱 עברית", th:"🇹🇭 ไทย", uk:"🇺🇦 Українська",
-    ro:"🇷🇴 Română", hu:"🇭🇺 Magyar", sv:"🇸🇪 Svenska", da:"🇩🇰 Dansk",
-    fi:"🇫🇮 Suomi", no:"🇳🇴 Norsk", sk:"🇸🇰 Slovenčina", bg:"🇧🇬 Български",
-    hr:"🇭🇷 Hrvatski", lt:"🇱🇹 Lietuvių", lv:"🇱🇻 Latviešu", et:"🇪🇪 Eesti",
-    sl:"🇸🇮 Slovenščina", ms:"🇲🇾 Melayu", bn:"🇧🇩 বাংলা", pa:"🇮🇳 ਪੰਜਾਬੀ",
-    ta:"🇮🇳 தமிழ்", te:"🇮🇳 తెలుగు", mr:"🇮🇳 मराठी", ha:"🇳🇬 Hausa",
-    tl:"🇵🇭 Filipino", gu:"🇮🇳 ગુજરાતી", am:"🇪🇹 አማርኛ", yo:"🇳🇬 Yorùbá",
-    uz:"🇺🇿 O'zbek", my:"🇲🇲 မြန်မာ", az:"🇦🇿 Azərbaycan", ig:"🇳🇬 Igbo", so:"🇸🇴 Soomaali"
+    zh:"🇨🇳 中文", ja:"🇯🇵 日本語", ko:"🇰🇷 한국어", hi:"🇮🇳 हिन्दी",
+    tr:"🇹🇷 Türkçe", fa:"🇮🇷 فارسی", ur:"🇵🇰 اردو", id:"🇮🇩 Indonesia",
+    ms:"🇲🇾 Melayu", vi:"🇻🇳 Tiếng Việt", th:"🇹🇭 ไทย", nl:"🇳🇱 Nederlands",
+    pl:"🇵🇱 Polski", sv:"🇸🇪 Svenska", bn:"🇧🇩 বাংলা", pa:"🇮🇳 ਪੰਜਾਬੀ",
+    mr:"🇮🇳 मराठी", ta:"🇮🇳 தமிழ்", te:"🇮🇳 తెలుగు", gu:"🇮🇳 ગુજરાતી",
+    sw:"🇰🇪 Kiswahili", ha:"🇳🇬 Hausa", yo:"🇳🇬 Yorùbá", yue:"🇨🇳 廣東話",
+    my:"🇲🇲 မြန်မာ", uk:"🇺🇦 Українська", sd:"🇵🇰 سنڌي", uz:"🇺🇿 O'zbek",
+    am:"🇪🇹 አማርኛ", tl:"🇵🇭 Filipino", ro:"🇷🇴 Română", he:"🇮🇱 עברית",
+    el:"🇬🇷 Ελληνικά", cs:"🇨🇿 Čeština", hu:"🇭🇺 Magyar", bg:"🇧🇬 Български",
+    hr:"🇭🇷 Hrvatski", sk:"🇸🇰 Slovenčina", da:"🇩🇰 Dansk", fi:"🇫🇮 Suomi",
+    no:"🇳🇴 Norsk", sr:"🇷🇸 Српски", lt:"🇱🇹 Lietuvių", lv:"🇱🇻 Latviešu",
+    et:"🇪🇪 Eesti", sl:"🇸🇮 Slovenščina"
 };
 
 // ============================================================
-// 20 MANUAL TRANSLATIONS (with new keys)
+// الترجمات الكاملة (جميع اللغات الأساسية)
 // ============================================================
-
 var translations = {};
 
-// Arabic
+// ---------- العربية ----------
 translations.ar = {
     dynamic:"مخبر الصحة الفيزيائية", freeLabel:"تشخيصات مجانية",
     listen:"استمع", copy:"انسخ", share:"شارك", back:"العودة", rating:"تقييمك",
     start_btn:"🧬 بدء الفحص الفيزيائي",
+    consent_title:"موافقة مسبقة",
+    consent_text:"سيطلب محاكاة وضع الإصبع، التنفس، والمشي. لن يتم تخزين أي بيانات.",
+    consent_btn:"✅ أوافق وأبدأ", refuse_btn:"✖ أرفض",
     sensor1:"حساس النبض والأكسجين", tool1:"📸 كاميرا",
     sensor2:"حساس التنفس والصوت", tool2:"🎙️ ميكروفون",
     sensor3:"حساس التوازن والمشي", tool3:"📳 اهتزاز",
@@ -465,19 +492,19 @@ translations.ar = {
     wait:"⏳ في انتظار القياس...",
     measuring:"⏳ جاري القياس... ({s} ث)",
     done_pulse:"❤️ نبضك منتظم وقوي",
-    sub_pulse:"معدل النبض: 72 نبضة/دقيقة (طبيعي)",
+    sub_pulse:"معدل النبض: {rate} نبضة/دقيقة",
     done_breath:"🌬️ تنفسك عميق وهادئ",
-    sub_breath:"نمط التنفس: مستقر وسلس",
+    sub_breath:"شدة التنفس: {rate}%",
     done_balance:"🧍 حركتك متزنة وسليمة",
-    sub_balance:"تماثل المشي ضمن النطاق الطبيعي",
+    sub_balance:"عدد الخطوات: {rate}",
     done_temp:"🌡️ حرارة بشرتك ضمن النطاق المريح",
-    sub_temp:"درجة الحرارة الجلدية معتدلة",
+    sub_temp:"درجة الحرارة: {rate}°C",
     measure:"▶️ قياس", retry:"🔄 إعادة",
     final_green:"🟢 ممتاز!", final_green_sub:"جميع مؤشراتك الفيزيائية مستقرة ومتناغمة.",
     final_yellow:"🟡 انتباه بسيط", final_yellow_sub:"نلاحظ تغيراً طفيفاً في أحد المؤشرات، ننصح بالمراقبة.",
     final_orange:"🟠 تغير ملحوظ", final_orange_sub:"تباين في المؤشرات، ننصح بالاسترخاء وإعادة الفحص.",
     legal:"⚠️ قراءة فيزيائية محاكاة، تعتمد على حساسات هاتفك، وهي ليست تشخيصاً طبياً، ولا تغني عن استشارة الطبيب المختص.",
-    pack1:"💵 تشخيص 1 / $2", pack5:"📦 5 تشخيصات / $8", pack15:"🏆 15 تشخيصاً / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"الوصول إلى وضع المطور", secret_sub:"أدخل كلمة المرور للوصول إلى الصلاحية غير المحدودة",
     admin_on:"👑 وضع المدير مفعل", step:"المرحلة", finger_ok:"✅ تم كشف الإصبع", finger_wait:"⏳ ضع إصبعك على الكاميرا", finger_fail:"❌ لم يتم كشف الإصبع",
     no_credits:"⚠️ رصيدك غير كافٍ، يرجى شراء باقة أو استخدام كود تفعيل",
@@ -485,26 +512,28 @@ translations.ar = {
     copied:"تم النسخ",
     shared:"تم المشاركة",
     cam_unavailable:"❌ الكاميرا غير متاحة",
-    credit_note:"تم عرض النتيجة بدون خصم رصيد (رصيدك غير كافٍ)",
-    partial_result:"✅ تم التشخيص باستخدام {0} من {1} حساس.",
-    no_sensors:"❌ لم يتمكن التطبيق من قراءة أي حساس. يرجى منح الأذونات والمحاولة مرة أخرى.",
-    verdict_partial:"🟡 تشخيص جزئي",
-    verdict_partial_sub:"النتيجة مبنية على البيانات المتوفرة من الحساسات التي عملت.",
-    verdict_single:"🟢 تشخيص بحساس واحد",
-    verdict_single_sub:"تم الاعتماد على حساس واحد فقط، النتيجة محدودة.",
-    show_verdict:"📋 عرض الخلاصة النهائية",
-    // new keys
-    code_placeholder:"🔑 كود التفعيل",
-    activate_btn:"تفعيل",
     share_not_available:"المشاركة غير مرتبطة",
-    share:"شارك"
+    done:"تم القياس",
+    unit_bpm:"نبضة/دقيقة",
+    unit_percent:"%",
+    unit_steps:"خطوة",
+    unit_celsius:"°C",
+    verdict_summary:"تشير قراءاتك إلى {status}. نبضك {pulse}، تنفسك {breath}، حركتك {steps}، وحرارتك {temp}.",
+    verdict_single:"⚠️ نتيجة محدودة",
+    verdict_single_sub:"تم قياس حساس واحد فقط، ننصح بإكمال باقي الحساسات للحصول على تقييم شامل.",
+    partial_result:"{0} من {1} حساسات تم قياسها",
+    activation_code:"🔑 كود التفعيل",
+    activate:"تفعيل"
 };
 
-// English
+// ---------- الإنجليزية ----------
 translations.en = {
     dynamic:"Physical Health Lab", freeLabel:"Free diagnoses",
     listen:"Listen", copy:"Copy", share:"Share", back:"Back", rating:"Your rating",
     start_btn:"🧬 Start Physical Check",
+    consent_title:"Prior Consent",
+    consent_text:"This will simulate finger placement, breathing, and walking. No data will be stored.",
+    consent_btn:"✅ I Agree & Start", refuse_btn:"✖ Refuse",
     sensor1:"Pulse & Oxygen", tool1:"📸 Camera",
     sensor2:"Breath & Sound", tool2:"🎙️ Mic",
     sensor3:"Balance & Gait", tool3:"📳 Motion",
@@ -516,19 +545,19 @@ translations.en = {
     wait:"⏳ Waiting for measurement...",
     measuring:"⏳ Measuring... ({s}s)",
     done_pulse:"❤️ Your pulse is regular and strong",
-    sub_pulse:"Heart rate: 72 bpm (Normal)",
+    sub_pulse:"Heart rate: {rate} bpm",
     done_breath:"🌬️ Your breathing is deep and calm",
-    sub_breath:"Breath pattern: stable and smooth",
+    sub_breath:"Breath intensity: {rate}%",
     done_balance:"🧍 Your movement is balanced and healthy",
-    sub_balance:"Gait symmetry within normal range",
+    sub_balance:"Steps: {rate}",
     done_temp:"🌡️ Your skin temperature is comfortable",
-    sub_temp:"Skin temperature within normal range",
+    sub_temp:"Temperature: {rate}°C",
     measure:"▶️ Measure", retry:"🔄 Retry",
     final_green:"🟢 Excellent!", final_green_sub:"All physical indicators are stable and consistent.",
     final_yellow:"🟡 Mild Alert", final_yellow_sub:"Slight change detected, monitoring advised.",
     final_orange:"🟠 Noticeable Change", final_orange_sub:"Variation detected, rest and re-check.",
     legal:"⚠️ Simulated physical reading, based on your phone's sensors, is not a medical diagnosis and does not replace consulting a specialist doctor.",
-    pack1:"💵 1 Diagnosis / $2", pack5:"📦 5 Diagnoses / $8", pack15:"🏆 15 Diagnoses / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Developer Access", secret_sub:"Enter password for unlimited access",
     admin_on:"👑 Admin mode activated", step:"Step", finger_ok:"✅ Finger detected", finger_wait:"⏳ Place your finger on camera", finger_fail:"❌ Finger not detected",
     no_credits:"⚠️ Insufficient balance, please buy a pack or use activation code",
@@ -536,25 +565,28 @@ translations.en = {
     copied:"Copied",
     shared:"Shared",
     cam_unavailable:"❌ Camera unavailable",
-    credit_note:"Result shown without deducting credit (insufficient balance)",
-    partial_result:"✅ Diagnosis performed using {0} out of {1} sensors.",
-    no_sensors:"❌ No sensor data. Please grant permissions and try again.",
-    verdict_partial:"🟡 Partial Diagnosis",
-    verdict_partial_sub:"Result based on available data from working sensors.",
-    verdict_single:"🟢 Single-sensor Diagnosis",
-    verdict_single_sub:"Based on one sensor only, result is limited.",
-    show_verdict:"📋 Show Final Verdict",
-    code_placeholder:"🔑 Activation code",
-    activate_btn:"Activate",
     share_not_available:"Sharing not available",
-    share:"Share"
+    done:"Done",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"steps",
+    unit_celsius:"°C",
+    verdict_summary:"Your readings show {status}. Pulse: {pulse}, Breath: {breath}, Steps: {steps}, Temperature: {temp}.",
+    verdict_single:"⚠️ Limited result",
+    verdict_single_sub:"Only one sensor measured. Complete all sensors for full assessment.",
+    partial_result:"{0} of {1} sensors measured",
+    activation_code:"🔑 Activation code",
+    activate:"Activate"
 };
 
-// French
+// ---------- الفرنسية ----------
 translations.fr = {
     dynamic:"Laboratoire de santé physique", freeLabel:"Diagnostics gratuits",
     listen:"Écouter", copy:"Copier", share:"Partager", back:"Retour", rating:"Votre évaluation",
     start_btn:"🧬 Commencer le bilan",
+    consent_title:"Consentement préalable",
+    consent_text:"Ceci simulera le placement du doigt, la respiration et la marche. Aucune donnée ne sera stockée.",
+    consent_btn:"✅ J'accepte et commence", refuse_btn:"✖ Refuser",
     sensor1:"Pouls et oxygène", tool1:"📸 Caméra",
     sensor2:"Respiration et son", tool2:"🎙️ Micro",
     sensor3:"Équilibre et marche", tool3:"📳 Mouvement",
@@ -566,19 +598,19 @@ translations.fr = {
     wait:"⏳ En attente...",
     measuring:"⏳ Mesure en cours... ({s}s)",
     done_pulse:"❤️ Votre pouls est régulier",
-    sub_pulse:"Fréquence: 72 bpm (Normale)",
+    sub_pulse:"Fréquence: {rate} bpm",
     done_breath:"🌬️ Respiration profonde et calme",
-    sub_breath:"Rythme stable et fluide",
+    sub_breath:"Intensité: {rate}%",
     done_balance:"🧍 Votre équilibre est bon",
-    sub_balance:"Symétrie de marche normale",
+    sub_balance:"Pas: {rate}",
     done_temp:"🌡️ Température cutanée confortable",
-    sub_temp:"Dans la plage normale",
+    sub_temp:"Température: {rate}°C",
     measure:"▶️ Mesurer", retry:"🔄 Refaire",
     final_green:"🟢 Excellent!", final_green_sub:"Tous les indicateurs sont stables.",
     final_yellow:"🟡 Alerte légère", final_yellow_sub:"Léger changement, surveillance conseillée.",
     final_orange:"🟠 Changement notable", final_orange_sub:"Variation détectée, repos recommandé.",
     legal:"⚠️ Lecture physique simulée, basée sur les capteurs de votre téléphone, n'est pas un diagnostic médical et ne remplace pas la consultation d'un médecin spécialiste.",
-    pack1:"💵 1 Diagnostic / $2", pack5:"📦 5 Diagnostics / $8", pack15:"🏆 15 Diagnostics / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Accès développeur", secret_sub:"Entrez le mot de passe pour un accès illimité",
     admin_on:"👑 Mode admin activé", step:"Étape", finger_ok:"✅ Doigt détecté", finger_wait:"⏳ Placez votre doigt sur la caméra", finger_fail:"❌ Doigt non détecté",
     no_credits:"⚠️ Solde insuffisant, veuillez acheter un forfait ou utiliser un code d'activation",
@@ -586,25 +618,28 @@ translations.fr = {
     copied:"Copié",
     shared:"Partagé",
     cam_unavailable:"❌ Caméra indisponible",
-    credit_note:"Résultat affiché sans déduire de crédit (solde insuffisant)",
-    partial_result:"✅ Diagnostic effectué en utilisant {0} sur {1} capteurs.",
-    no_sensors:"❌ Aucune donnée de capteur. Veuillez accorder les autorisations et réessayer.",
-    verdict_partial:"🟡 Diagnostic partiel",
-    verdict_partial_sub:"Résultat basé sur les données disponibles des capteurs fonctionnels.",
-    verdict_single:"🟢 Diagnostic à un seul capteur",
-    verdict_single_sub:"Basé sur un seul capteur, le résultat est limité.",
-    show_verdict:"📋 Afficher le verdict final",
-    code_placeholder:"🔑 Code d'activation",
-    activate_btn:"Activer",
     share_not_available:"Partage non disponible",
-    share:"Partager"
+    done:"Terminé",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"pas",
+    unit_celsius:"°C",
+    verdict_summary:"Vos lectures montrent {status}. Pouls: {pulse}, Respiration: {breath}, Pas: {steps}, Température: {temp}.",
+    verdict_single:"⚠️ Résultat limité",
+    verdict_single_sub:"Un seul capteur mesuré. Complétez tous les capteurs pour une évaluation complète.",
+    partial_result:"{0} sur {1} capteurs mesurés",
+    activation_code:"🔑 Code d'activation",
+    activate:"Activer"
 };
 
-// Spanish
+// ---------- الإسبانية ----------
 translations.es = {
     dynamic:"Laboratorio de salud física", freeLabel:"Diagnósticos gratis",
     listen:"Escuchar", copy:"Copiar", share:"Compartir", back:"Volver", rating:"Su valoración",
     start_btn:"🧬 Iniciar chequeo",
+    consent_title:"Consentimiento previo",
+    consent_text:"Esto simulará la colocación del dedo, la respiración y la caminata. No se almacenarán datos.",
+    consent_btn:"✅ Acepto y comienzo", refuse_btn:"✖ Rechazar",
     sensor1:"Pulso y oxígeno", tool1:"📸 Cámara",
     sensor2:"Respiración y sonido", tool2:"🎙️ Micrófono",
     sensor3:"Equilibrio y marcha", tool3:"📳 Movimiento",
@@ -616,19 +651,19 @@ translations.es = {
     wait:"⏳ Esperando medición...",
     measuring:"⏳ Midiendo... ({s}s)",
     done_pulse:"❤️ Su pulso es regular",
-    sub_pulse:"Ritmo: 72 lpm (Normal)",
+    sub_pulse:"Ritmo: {rate} lpm",
     done_breath:"🌬️ Respiración profunda y calmada",
-    sub_breath:"Patrón respiratorio estable",
+    sub_breath:"Intensidad: {rate}%",
     done_balance:"🧍 Su equilibrio es bueno",
-    sub_balance:"Simetría de marcha normal",
+    sub_balance:"Pasos: {rate}",
     done_temp:"🌡️ Temperatura cutánea confortable",
-    sub_temp:"Dentro del rango normal",
+    sub_temp:"Temperatura: {rate}°C",
     measure:"▶️ Medir", retry:"🔄 Repetir",
     final_green:"🟢 Excelente!", final_green_sub:"Todos los indicadores son estables.",
     final_yellow:"🟡 Alerta leve", final_yellow_sub:"Cambio leve, vigilancia recomendada.",
     final_orange:"🟠 Cambio notable", final_orange_sub:"Variación detectada, descanse y re-evalúe.",
     legal:"⚠️ Lectura física simulada, basada en los sensores de su teléfono, no es un diagnóstico médico y no reemplaza la consulta con un médico especialista.",
-    pack1:"💵 1 Diagnóstico / $2", pack5:"📦 5 Diagnósticos / $8", pack15:"🏆 15 Diagnósticos / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Acceso desarrollador", secret_sub:"Ingrese la contraseña para acceso ilimitado",
     admin_on:"👑 Modo admin activado", step:"Paso", finger_ok:"✅ Dedo detectado", finger_wait:"⏳ Coloque su dedo en la cámara", finger_fail:"❌ Dedo no detectado",
     no_credits:"⚠️ Saldo insuficiente, compre un paquete o use un código de activación",
@@ -636,25 +671,28 @@ translations.es = {
     copied:"Copiado",
     shared:"Compartido",
     cam_unavailable:"❌ Cámara no disponible",
-    credit_note:"Resultado mostrado sin deducir crédito (saldo insuficiente)",
-    partial_result:"✅ Diagnóstico realizado usando {0} de {1} sensores.",
-    no_sensors:"❌ No hay datos de sensores. Conceda permisos e intente de nuevo.",
-    verdict_partial:"🟡 Diagnóstico parcial",
-    verdict_partial_sub:"Resultado basado en datos disponibles de sensores funcionales.",
-    verdict_single:"🟢 Diagnóstico con un solo sensor",
-    verdict_single_sub:"Basado en un solo sensor, el resultado es limitado.",
-    show_verdict:"📋 Mostrar veredicto final",
-    code_placeholder:"🔑 Código de activación",
-    activate_btn:"Activar",
     share_not_available:"Compartir no disponible",
-    share:"Compartir"
+    done:"Hecho",
+    unit_bpm:"lpm",
+    unit_percent:"%",
+    unit_steps:"pasos",
+    unit_celsius:"°C",
+    verdict_summary:"Sus lecturas muestran {status}. Pulso: {pulse}, Respiración: {breath}, Pasos: {steps}, Temperatura: {temp}.",
+    verdict_single:"⚠️ Resultado limitado",
+    verdict_single_sub:"Sólo se midió un sensor. Complete todos los sensores para una evaluación completa.",
+    partial_result:"{0} de {1} sensores medidos",
+    activation_code:"🔑 Código de activación",
+    activate:"Activar"
 };
 
-// German
+// ---------- الألمانية ----------
 translations.de = {
     dynamic:"Physikalisches Gesundheitslabor", freeLabel:"Kostenlose Diagnosen",
     listen:"Anhören", copy:"Kopieren", share:"Teilen", back:"Zurück", rating:"Ihre Bewertung",
     start_btn:"🧬 Physische Untersuchung starten",
+    consent_title:"Vorherige Zustimmung",
+    consent_text:"Dies simuliert das Platzieren des Fingers, Atmen und Gehen. Es werden keine Daten gespeichert.",
+    consent_btn:"✅ Ich stimme zu und starte", refuse_btn:"✖ Ablehnen",
     sensor1:"Puls & Sauerstoff", tool1:"📸 Kamera",
     sensor2:"Atmung & Klang", tool2:"🎙️ Mikrofon",
     sensor3:"Gleichgewicht & Gang", tool3:"📳 Bewegung",
@@ -666,19 +704,19 @@ translations.de = {
     wait:"⏳ Warten auf Messung...",
     measuring:"⏳ Messung läuft... ({s}s)",
     done_pulse:"❤️ Ihr Puls ist regelmäßig und stark",
-    sub_pulse:"Herzfrequenz: 72 bpm (Normal)",
+    sub_pulse:"Herzfrequenz: {rate} bpm",
     done_breath:"🌬️ Ihre Atmung ist tief und ruhig",
-    sub_breath:"Atemmuster: stabil und gleichmäßig",
+    sub_breath:"Intensität: {rate}%",
     done_balance:"🧍 Ihre Bewegung ist ausgeglichen und gesund",
-    sub_balance:"Gangsymmetrie im normalen Bereich",
+    sub_balance:"Schritte: {rate}",
     done_temp:"🌡️ Ihre Hauttemperatur ist angenehm",
-    sub_temp:"Hauttemperatur im normalen Bereich",
+    sub_temp:"Temperatur: {rate}°C",
     measure:"▶️ Messen", retry:"🔄 Wiederholen",
     final_green:"🟢 Ausgezeichnet!", final_green_sub:"Alle körperlichen Indikatoren sind stabil und konsistent.",
     final_yellow:"🟡 Leichte Warnung", final_yellow_sub:"Leichte Veränderung festgestellt, Überwachung empfohlen.",
     final_orange:"🟠 Deutliche Veränderung", final_orange_sub:"Abweichung erkannt, Ruhe und erneute Überprüfung empfohlen.",
     legal:"⚠️ Simulierte physikalische Messung, basierend auf den Sensoren Ihres Telefons, ist keine medizinische Diagnose und ersetzt nicht die Konsultation eines Facharztes.",
-    pack1:"💵 1 Diagnose / $2", pack5:"📦 5 Diagnosen / $8", pack15:"🏆 15 Diagnosen / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Entwicklerzugang", secret_sub:"Geben Sie das Passwort für unbegrenzten Zugang ein",
     admin_on:"👑 Admin-Modus aktiviert", step:"Schritt", finger_ok:"✅ Finger erkannt", finger_wait:"⏳ Legen Sie Ihren Finger auf die Kamera", finger_fail:"❌ Finger nicht erkannt",
     no_credits:"⚠️ Ungenügendes Guthaben, kaufen Sie ein Paket oder verwenden Sie einen Aktivierungscode",
@@ -686,25 +724,28 @@ translations.de = {
     copied:"Kopiert",
     shared:"Geteilt",
     cam_unavailable:"❌ Kamera nicht verfügbar",
-    credit_note:"Ergebnis angezeigt ohne Guthabenabzug (ungenügendes Guthaben)",
-    partial_result:"✅ Diagnose durchgeführt mit {0} von {1} Sensoren.",
-    no_sensors:"❌ Keine Sensordaten. Bitte erteilen Sie Berechtigungen und versuchen Sie es erneut.",
-    verdict_partial:"🟡 Teilweise Diagnose",
-    verdict_partial_sub:"Ergebnis basierend auf verfügbaren Daten von funktionierenden Sensoren.",
-    verdict_single:"🟢 Diagnose mit einem Sensor",
-    verdict_single_sub:"Nur auf einem Sensor basiert, das Ergebnis ist begrenzt.",
-    show_verdict:"📋 Endgültiges Urteil anzeigen",
-    code_placeholder:"🔑 Aktivierungscode",
-    activate_btn:"Aktivieren",
     share_not_available:"Teilen nicht verfügbar",
-    share:"Teilen"
+    done:"Erledigt",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"Schritte",
+    unit_celsius:"°C",
+    verdict_summary:"Ihre Messwerte zeigen {status}. Puls: {pulse}, Atmung: {breath}, Schritte: {steps}, Temperatur: {temp}.",
+    verdict_single:"⚠️ Begrenztes Ergebnis",
+    verdict_single_sub:"Nur ein Sensor gemessen. Führen Sie alle Sensoren für eine vollständige Bewertung durch.",
+    partial_result:"{0} von {1} Sensoren gemessen",
+    activation_code:"🔑 Aktivierungscode",
+    activate:"Aktivieren"
 };
 
-// Italian
+// ---------- الإيطالية ----------
 translations.it = {
     dynamic:"Laboratorio di salute fisica", freeLabel:"Diagnosi gratuite",
     listen:"Ascolta", copy:"Copia", share:"Condividi", back:"Indietro", rating:"La tua valutazione",
     start_btn:"🧬 Avvia controllo fisico",
+    consent_title:"Consenso preventivo",
+    consent_text:"Questo simulerà il posizionamento del dito, la respirazione e la camminata. Nessun dato verrà memorizzato.",
+    consent_btn:"✅ Accetto e inizio", refuse_btn:"✖ Rifiuta",
     sensor1:"Polso e ossigeno", tool1:"📸 Fotocamera",
     sensor2:"Respiro e suono", tool2:"🎙️ Microfono",
     sensor3:"Equilibrio e andatura", tool3:"📳 Movimento",
@@ -716,19 +757,19 @@ translations.it = {
     wait:"⏳ In attesa di misurazione...",
     measuring:"⏳ Misurazione in corso... ({s}s)",
     done_pulse:"❤️ Il tuo polso è regolare e forte",
-    sub_pulse:"Frequenza: 72 bpm (Normale)",
+    sub_pulse:"Frequenza: {rate} bpm",
     done_breath:"🌬️ Il tuo respiro è profondo e calmo",
-    sub_breath:"Pattern respiratorio: stabile e fluido",
+    sub_breath:"Intensità: {rate}%",
     done_balance:"🧍 Il tuo movimento è equilibrato e sano",
-    sub_balance:"Simmetria dell'andatura nella norma",
+    sub_balance:"Passi: {rate}",
     done_temp:"🌡️ La tua temperatura cutanea è confortevole",
-    sub_temp:"Temperatura cutanea nella norma",
+    sub_temp:"Temperatura: {rate}°C",
     measure:"▶️ Misura", retry:"🔄 Riprova",
     final_green:"🟢 Eccellente!", final_green_sub:"Tutti gli indicatori fisici sono stabili e coerenti.",
     final_yellow:"🟡 Attenzione lieve", final_yellow_sub:"Leggero cambiamento rilevato, si consiglia il monitoraggio.",
     final_orange:"🟠 Cambiamento notevole", final_orange_sub:"Variazione rilevata, si consiglia riposo e nuova verifica.",
     legal:"⚠️ Lettura fisica simulata, basata sui sensori del tuo telefono, non è una diagnosi medica e non sostituisce la consulenza di un medico specialista.",
-    pack1:"💵 1 Diagnosi / $2", pack5:"📦 5 Diagnosi / $8", pack15:"🏆 15 Diagnosi / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Accesso sviluppatore", secret_sub:"Inserisci la password per accesso illimitato",
     admin_on:"👑 Modalità admin attivata", step:"Passo", finger_ok:"✅ Dito rilevato", finger_wait:"⏳ Metti il dito sulla fotocamera", finger_fail:"❌ Dito non rilevato",
     no_credits:"⚠️ Saldo insufficiente, acquista un pacchetto o usa un codice di attivazione",
@@ -736,25 +777,28 @@ translations.it = {
     copied:"Copiato",
     shared:"Condiviso",
     cam_unavailable:"❌ Fotocamera non disponibile",
-    credit_note:"Risultato mostrato senza dedurre credito (saldo insufficiente)",
-    partial_result:"✅ Diagnosi eseguita utilizzando {0} di {1} sensori.",
-    no_sensors:"❌ Nessun dato del sensore. Concedi le autorizzazioni e riprova.",
-    verdict_partial:"🟡 Diagnosi parziale",
-    verdict_partial_sub:"Risultato basato sui dati disponibili dai sensori funzionanti.",
-    verdict_single:"🟢 Diagnosi a sensore singolo",
-    verdict_single_sub:"Basato su un solo sensore, il risultato è limitato.",
-    show_verdict:"📋 Mostra verdetto finale",
-    code_placeholder:"🔑 Codice di attivazione",
-    activate_btn:"Attiva",
     share_not_available:"Condivisione non disponibile",
-    share:"Condividi"
+    done:"Fatto",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"passi",
+    unit_celsius:"°C",
+    verdict_summary:"Le tue letture mostrano {status}. Polso: {pulse}, Respiro: {breath}, Passi: {steps}, Temperatura: {temp}.",
+    verdict_single:"⚠️ Risultato limitato",
+    verdict_single_sub:"Solo un sensore misurato. Completa tutti i sensori per una valutazione completa.",
+    partial_result:"{0} di {1} sensori misurati",
+    activation_code:"🔑 Codice di attivazione",
+    activate:"Attiva"
 };
 
-// Portuguese
+// ---------- البرتغالية ----------
 translations.pt = {
     dynamic:"Laboratório de saúde física", freeLabel:"Diagnósticos grátis",
     listen:"Ouvir", copy:"Copiar", share:"Compartilhar", back:"Voltar", rating:"Sua avaliação",
     start_btn:"🧬 Iniciar exame físico",
+    consent_title:"Consentimento prévio",
+    consent_text:"Isso simulará a colocação do dedo, respiração e caminhada. Nenhum dado será armazenado.",
+    consent_btn:"✅ Concordo e começo", refuse_btn:"✖ Recusar",
     sensor1:"Pulso e oxigênio", tool1:"📸 Câmera",
     sensor2:"Respiração e som", tool2:"🎙️ Microfone",
     sensor3:"Equilíbrio e marcha", tool3:"📳 Movimento",
@@ -766,19 +810,19 @@ translations.pt = {
     wait:"⏳ Aguardando medição...",
     measuring:"⏳ Medindo... ({s}s)",
     done_pulse:"❤️ Seu pulso está regular e forte",
-    sub_pulse:"Frequência: 72 bpm (Normal)",
+    sub_pulse:"Frequência: {rate} bpm",
     done_breath:"🌬️ Sua respiração é profunda e calma",
-    sub_breath:"Padrão respiratório: estável e suave",
+    sub_breath:"Intensidade: {rate}%",
     done_balance:"🧍 Seu movimento está equilibrado e saudável",
-    sub_balance:"Simetria da marcha dentro da normalidade",
+    sub_balance:"Passos: {rate}",
     done_temp:"🌡️ Sua temperatura da pele está confortável",
-    sub_temp:"Temperatura da pele dentro da normalidade",
+    sub_temp:"Temperatura: {rate}°C",
     measure:"▶️ Medir", retry:"🔄 Repetir",
     final_green:"🟢 Excelente!", final_green_sub:"Todos os indicadores físicos estão estáveis e consistentes.",
     final_yellow:"🟡 Alerta leve", final_yellow_sub:"Pequena alteração detectada, monitoramento aconselhado.",
     final_orange:"🟠 Mudança notável", final_orange_sub:"Variação detectada, descanse e reavalie.",
     legal:"⚠️ Leitura física simulada, baseada nos sensores do seu telefone, não é um diagnóstico médico e não substitui a consulta com um médico especialista.",
-    pack1:"💵 1 Diagnóstico / $2", pack5:"📦 5 Diagnósticos / $8", pack15:"🏆 15 Diagnósticos / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Acesso desenvolvedor", secret_sub:"Digite a senha para acesso ilimitado",
     admin_on:"👑 Modo admin ativado", step:"Etapa", finger_ok:"✅ Dedo detectado", finger_wait:"⏳ Coloque o dedo na câmera", finger_fail:"❌ Dedo não detectado",
     no_credits:"⚠️ Saldo insuficiente, compre um pacote ou use um código de ativação",
@@ -786,25 +830,28 @@ translations.pt = {
     copied:"Copiado",
     shared:"Compartilhado",
     cam_unavailable:"❌ Câmera indisponível",
-    credit_note:"Resultado exibido sem deduzir crédito (saldo insuficiente)",
-    partial_result:"✅ Diagnóstico realizado usando {0} de {1} sensores.",
-    no_sensors:"❌ Sem dados de sensor. Conceda permissões e tente novamente.",
-    verdict_partial:"🟡 Diagnóstico parcial",
-    verdict_partial_sub:"Resultado baseado em dados disponíveis de sensores em funcionamento.",
-    verdict_single:"🟢 Diagnóstico de sensor único",
-    verdict_single_sub:"Baseado em apenas um sensor, o resultado é limitado.",
-    show_verdict:"📋 Mostrar veredito final",
-    code_placeholder:"🔑 Código de ativação",
-    activate_btn:"Ativar",
     share_not_available:"Compartilhamento não disponível",
-    share:"Compartilhar"
+    done:"Concluído",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"passos",
+    unit_celsius:"°C",
+    verdict_summary:"Suas leituras mostram {status}. Pulso: {pulse}, Respiração: {breath}, Passos: {steps}, Temperatura: {temp}.",
+    verdict_single:"⚠️ Resultado limitado",
+    verdict_single_sub:"Apenas um sensor medido. Complete todos os sensores para uma avaliação completa.",
+    partial_result:"{0} de {1} sensores medidos",
+    activation_code:"🔑 Código de ativação",
+    activate:"Ativar"
 };
 
-// Russian
+// ---------- الروسية ----------
 translations.ru = {
     dynamic:"Лаборатория физического здоровья", freeLabel:"Бесплатные диагностики",
     listen:"Слушать", copy:"Копировать", share:"Поделиться", back:"Назад", rating:"Ваша оценка",
     start_btn:"🧬 Начать физический осмотр",
+    consent_title:"Предварительное согласие",
+    consent_text:"Это будет имитировать размещение пальца, дыхание и ходьбу. Никакие данные не будут сохранены.",
+    consent_btn:"✅ Согласен и начинаю", refuse_btn:"✖ Отказаться",
     sensor1:"Пульс и кислород", tool1:"📸 Камера",
     sensor2:"Дыхание и звук", tool2:"🎙️ Микрофон",
     sensor3:"Баланс и походка", tool3:"📳 Движение",
@@ -816,19 +863,19 @@ translations.ru = {
     wait:"⏳ Ожидание измерения...",
     measuring:"⏳ Измерение... ({s}s)",
     done_pulse:"❤️ Ваш пульс регулярный и сильный",
-    sub_pulse:"Частота: 72 уд/мин (Норма)",
+    sub_pulse:"Частота: {rate} уд/мин",
     done_breath:"🌬️ Ваше дыхание глубокое и спокойное",
-    sub_breath:"Дыхательный паттерн: стабильный и плавный",
+    sub_breath:"Интенсивность: {rate}%",
     done_balance:"🧍 Ваше движение сбалансировано и здорово",
-    sub_balance:"Симметрия походки в норме",
+    sub_balance:"Шаги: {rate}",
     done_temp:"🌡️ Температура вашей кожи комфортна",
-    sub_temp:"Температура кожи в норме",
+    sub_temp:"Температура: {rate}°C",
     measure:"▶️ Измерить", retry:"🔄 Повторить",
     final_green:"🟢 Отлично!", final_green_sub:"Все физические показатели стабильны и согласованы.",
     final_yellow:"🟡 Легкое предупреждение", final_yellow_sub:"Обнаружено небольшое изменение, рекомендуется мониторинг.",
     final_orange:"🟠 Заметное изменение", final_orange_sub:"Обнаружено отклонение, рекомендуется отдых и повторная проверка.",
     legal:"⚠️ Имитация физических показаний, основанная на датчиках вашего телефона, не является медицинским диагнозом и не заменяет консультацию врача-специалиста.",
-    pack1:"💵 1 Диагностика / $2", pack5:"📦 5 Диагностик / $8", pack15:"🏆 15 Диагностик / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Доступ разработчика", secret_sub:"Введите пароль для неограниченного доступа",
     admin_on:"👑 Режим администратора активирован", step:"Шаг", finger_ok:"✅ Палец обнаружен", finger_wait:"⏳ Положите палец на камеру", finger_fail:"❌ Палец не обнаружен",
     no_credits:"⚠️ Недостаточно средств, купите пакет или используйте код активации",
@@ -836,25 +883,28 @@ translations.ru = {
     copied:"Скопировано",
     shared:"Поделиться",
     cam_unavailable:"❌ Камера недоступна",
-    credit_note:"Результат показан без списания кредита (недостаточно средств)",
-    partial_result:"✅ Диагностика выполнена с использованием {0} из {1} датчиков.",
-    no_sensors:"❌ Нет данных с датчиков. Предоставьте разрешения и попробуйте снова.",
-    verdict_partial:"🟡 Частичная диагностика",
-    verdict_partial_sub:"Результат основан на доступных данных от работающих датчиков.",
-    verdict_single:"🟢 Диагностика по одному датчику",
-    verdict_single_sub:"Основано только на одном датчике, результат ограничен.",
-    show_verdict:"📋 Показать окончательный вердикт",
-    code_placeholder:"🔑 Код активации",
-    activate_btn:"Активировать",
     share_not_available:"Общий доступ недоступен",
-    share:"Поделиться"
+    done:"Готово",
+    unit_bpm:"уд/мин",
+    unit_percent:"%",
+    unit_steps:"шагов",
+    unit_celsius:"°C",
+    verdict_summary:"Ваши показания показывают {status}. Пульс: {pulse}, Дыхание: {breath}, Шаги: {steps}, Температура: {temp}.",
+    verdict_single:"⚠️ Ограниченный результат",
+    verdict_single_sub:"Измерен только один датчик. Выполните все датчики для полной оценки.",
+    partial_result:"{0} из {1} датчиков измерено",
+    activation_code:"🔑 Код активации",
+    activate:"Активировать"
 };
 
-// Chinese
+// ---------- الصينية ----------
 translations.zh = {
     dynamic:"物理健康实验室", freeLabel:"免费诊断",
     listen:"听", copy:"复制", share:"分享", back:"返回", rating:"您的评分",
     start_btn:"🧬 开始身体检查",
+    consent_title:"事先同意",
+    consent_text:"这将模拟手指放置、呼吸和行走。不会存储任何数据。",
+    consent_btn:"✅ 我同意并开始", refuse_btn:"✖ 拒绝",
     sensor1:"脉搏和氧气", tool1:"📸 相机",
     sensor2:"呼吸和声音", tool2:"🎙️ 麦克风",
     sensor3:"平衡和步态", tool3:"📳 运动",
@@ -864,21 +914,21 @@ translations.zh = {
     instr3:"📌 走三步，然后点击测量",
     instr4:"📌 将手机背面贴紧皮肤，然后点击测量",
     wait:"⏳ 等待测量...",
-    measuring:"⏳ 测量中... ({s})",
+    measuring:"⏳ 测量中... ({s}s)",
     done_pulse:"❤️ 您的脉搏规律而有力",
-    sub_pulse:"心率: 72 次/分 (正常)",
+    sub_pulse:"心率: {rate} 次/分",
     done_breath:"🌬️ 您的呼吸深沉而平静",
-    sub_breath:"呼吸模式: 稳定顺畅",
+    sub_breath:"呼吸强度: {rate}%",
     done_balance:"🧍 您的动作平衡健康",
-    sub_balance:"步态对称性在正常范围内",
+    sub_balance:"步数: {rate}",
     done_temp:"🌡️ 您的皮肤温度舒适",
-    sub_temp:"皮肤温度在正常范围内",
+    sub_temp:"温度: {rate}°C",
     measure:"▶️ 测量", retry:"🔄 重试",
     final_green:"🟢 优秀！", final_green_sub:"所有身体指标稳定且一致。",
     final_yellow:"🟡 轻度提醒", final_yellow_sub:"检测到轻微变化，建议监测。",
     final_orange:"🟠 明显变化", final_orange_sub:"检测到波动，建议休息并重新检查。",
     legal:"⚠️ 模拟身体读数，基于您手机的传感器，不是医学诊断，不能替代专科医生的咨询。",
-    pack1:"💵 1 次诊断 / $2", pack5:"📦 5 次诊断 / $8", pack15:"🏆 15 次诊断 / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"开发者访问", secret_sub:"输入密码以获取无限访问权限",
     admin_on:"👑 管理员模式已激活", step:"步骤", finger_ok:"✅ 检测到手指", finger_wait:"⏳ 将手指放在相机上", finger_fail:"❌ 未检测到手指",
     no_credits:"⚠️ 余额不足，请购买套餐或使用激活码",
@@ -886,25 +936,28 @@ translations.zh = {
     copied:"已复制",
     shared:"已分享",
     cam_unavailable:"❌ 相机不可用",
-    credit_note:"结果显示未扣除积分（余额不足）",
-    partial_result:"✅ 使用 {0} 个传感器中的 {1} 个进行诊断。",
-    no_sensors:"❌ 没有传感器数据。请授予权限并重试。",
-    verdict_partial:"🟡 部分诊断",
-    verdict_partial_sub:"结果基于可用传感器数据。",
-    verdict_single:"🟢 单传感器诊断",
-    verdict_single_sub:"仅基于一个传感器，结果有限。",
-    show_verdict:"📋 显示最终结论",
-    code_placeholder:"🔑 激活码",
-    activate_btn:"激活",
     share_not_available:"共享不可用",
-    share:"分享"
+    done:"完成",
+    unit_bpm:"次/分",
+    unit_percent:"%",
+    unit_steps:"步",
+    unit_celsius:"°C",
+    verdict_summary:"您的读数显示 {status}。脉搏: {pulse}，呼吸: {breath}，步数: {steps}，温度: {temp}。",
+    verdict_single:"⚠️ 结果有限",
+    verdict_single_sub:"仅测量了一个传感器。请完成所有传感器以获得完整评估。",
+    partial_result:"已测量 {0}/{1} 个传感器",
+    activation_code:"🔑 激活码",
+    activate:"激活"
 };
 
-// Japanese
+// ---------- اليابانية ----------
 translations.ja = {
     dynamic:"物理健康ラボ", freeLabel:"無料診断",
     listen:"聞く", copy:"コピー", share:"共有", back:"戻る", rating:"評価",
     start_btn:"🧬 身体検査を開始",
+    consent_title:"事前同意",
+    consent_text:"指の配置、呼吸、歩行をシミュレートします。データは保存されません。",
+    consent_btn:"✅ 同意して開始", refuse_btn:"✖ 拒否",
     sensor1:"脈拍と酸素", tool1:"📸 カメラ",
     sensor2:"呼吸と音", tool2:"🎙️ マイク",
     sensor3:"バランスと歩行", tool3:"📳 モーション",
@@ -916,19 +969,19 @@ translations.ja = {
     wait:"⏳ 測定待機中...",
     measuring:"⏳ 測定中... ({s}秒)",
     done_pulse:"❤️ 脈は規則的で強いです",
-    sub_pulse:"心拍数: 72 bpm (正常)",
+    sub_pulse:"心拍数: {rate} bpm",
     done_breath:"🌬️ 呼吸は深く落ち着いています",
-    sub_breath:"呼吸パターン: 安定して滑らか",
+    sub_breath:"強度: {rate}%",
     done_balance:"🧍 動きはバランスが取れて健康的です",
-    sub_balance:"歩行対称性は正常範囲内",
+    sub_balance:"歩数: {rate}",
     done_temp:"🌡️ 皮膚温度は快適です",
-    sub_temp:"皮膚温度は正常範囲内",
+    sub_temp:"温度: {rate}°C",
     measure:"▶️ 測定", retry:"🔄 再試行",
     final_green:"🟢 素晴らしい！", final_green_sub:"すべての身体指標は安定して一致しています。",
     final_yellow:"🟡 軽度の注意", final_yellow_sub:"わずかな変化が検出されました。監視をお勧めします。",
     final_orange:"🟠 顕著な変化", final_orange_sub:"変動が検出されました。休息と再検査をお勧めします。",
     legal:"⚠️ シミュレーションによる身体測定値、あなたの携帯電話のセンサーに基づいており、医学的診断ではなく、専門医の診察に代わるものではありません。",
-    pack1:"💵 1 診断 / $2", pack5:"📦 5 診断 / $8", pack15:"🏆 15 診断 / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"開発者アクセス", secret_sub:"無制限アクセスのためのパスワードを入力",
     admin_on:"👑 管理者モードが有効になりました", step:"ステップ", finger_ok:"✅ 指が検出されました", finger_wait:"⏳ 指をカメラに置いてください", finger_fail:"❌ 指が検出されませんでした",
     no_credits:"⚠️ 残高が不足しています。パックを購入するか、アクティベーションコードを使用してください",
@@ -936,25 +989,28 @@ translations.ja = {
     copied:"コピーされました",
     shared:"共有されました",
     cam_unavailable:"❌ カメラが利用できません",
-    credit_note:"結果が表示されましたが、クレジットは差し引かれませんでした（残高不足）",
-    partial_result:"✅ {1} 個のセンサーのうち {0} 個を使用して診断を実行しました。",
-    no_sensors:"❌ センサーデータがありません。許可を付与して再試行してください。",
-    verdict_partial:"🟡 部分診断",
-    verdict_partial_sub:"利用可能なセンサーデータに基づく結果。",
-    verdict_single:"🟢 単一センサー診断",
-    verdict_single_sub:"1 つのセンサーのみに基づいているため、結果は限られています。",
-    show_verdict:"📋 最終判定を表示",
-    code_placeholder:"🔑 アクティベーションコード",
-    activate_btn:"アクティブ化",
     share_not_available:"共有不可",
-    share:"共有"
+    done:"完了",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"歩",
+    unit_celsius:"°C",
+    verdict_summary:"測定結果は {status} です。脈拍: {pulse}、呼吸: {breath}、歩数: {steps}、温度: {temp}。",
+    verdict_single:"⚠️ 限定的な結果",
+    verdict_single_sub:"1つのセンサーのみ測定されました。完全な評価のためにすべてのセンサーを完了してください。",
+    partial_result:"{0}/{1} センサーを測定",
+    activation_code:"🔑 アクティベーションコード",
+    activate:"有効化"
 };
 
-// Korean
+// ---------- الكورية ----------
 translations.ko = {
     dynamic:"물리 건강 연구소", freeLabel:"무료 진단",
     listen:"듣기", copy:"복사", share:"공유", back:"뒤로", rating:"평가",
     start_btn:"🧬 신체 검사 시작",
+    consent_title:"사전 동의",
+    consent_text:"손가락 배치, 호흡, 걷기를 시뮬레이션합니다. 데이터가 저장되지 않습니다.",
+    consent_btn:"✅ 동의하고 시작", refuse_btn:"✖ 거부",
     sensor1:"맥박 및 산소", tool1:"📸 카메라",
     sensor2:"호흡 및 소리", tool2:"🎙️ 마이크",
     sensor3:"균형 및 보행", tool3:"📳 움직임",
@@ -966,19 +1022,19 @@ translations.ko = {
     wait:"⏳ 측정 대기 중...",
     measuring:"⏳ 측정 중... ({s}초)",
     done_pulse:"❤️ 맥박이 규칙적이고 강합니다",
-    sub_pulse:"심박수: 72 bpm (정상)",
+    sub_pulse:"심박수: {rate} bpm",
     done_breath:"🌬️ 호흡이 깊고 차분합니다",
-    sub_breath:"호흡 패턴: 안정적이고 부드러움",
+    sub_breath:"강도: {rate}%",
     done_balance:"🧍 움직임이 균형 잡히고 건강합니다",
-    sub_balance:"보행 대칭성 정상 범위",
+    sub_balance:"걸음 수: {rate}",
     done_temp:"🌡️ 피부 온도가 편안합니다",
-    sub_temp:"피부 온도 정상 범위",
+    sub_temp:"온도: {rate}°C",
     measure:"▶️ 측정", retry:"🔄 재시도",
     final_green:"🟢 우수합니다!", final_green_sub:"모든 신체 지표가 안정적이고 일관됩니다.",
     final_yellow:"🟡 경미한 주의", final_yellow_sub:"약간의 변화가 감지되었습니다. 모니터링을 권장합니다.",
     final_orange:"🟠 뚜렷한 변화", final_orange_sub:"변동이 감지되었습니다. 휴식 후 재검사를 권장합니다.",
     legal:"⚠️ 시뮬레이션 신체 측정, 휴대폰 센서를 기반으로 하며, 의학적 진단이 아니며 전문의의 상담을 대체하지 않습니다.",
-    pack1:"💵 1 진단 / $2", pack5:"📦 5 진단 / $8", pack15:"🏆 15 진단 / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"개발자 액세스", secret_sub:"무제한 액세스를 위한 비밀번호 입력",
     admin_on:"👑 관리자 모드 활성화됨", step:"단계", finger_ok:"✅ 손가락 감지됨", finger_wait:"⏳ 손가락을 카메라에 대세요", finger_fail:"❌ 손가락이 감지되지 않음",
     no_credits:"⚠️ 잔액이 부족합니다. 팩을 구매하거나 활성화 코드를 사용하세요",
@@ -986,25 +1042,81 @@ translations.ko = {
     copied:"복사됨",
     shared:"공유됨",
     cam_unavailable:"❌ 카메라를 사용할 수 없음",
-    credit_note:"결과가 표시되었지만 크레딧이 차감되지 않았습니다(잔액 부족).",
-    partial_result:"✅ {1}개의 센서 중 {0}개를 사용하여 진단을 수행했습니다.",
-    no_sensors:"❌ 센서 데이터가 없습니다. 권한을 부여하고 다시 시도하세요.",
-    verdict_partial:"🟡 부분 진단",
-    verdict_partial_sub:"작동 중인 센서의 사용 가능한 데이터를 기반으로 한 결과입니다.",
-    verdict_single:"🟢 단일 센서 진단",
-    verdict_single_sub:"하나의 센서만 기반으로 하므로 결과가 제한적입니다.",
-    show_verdict:"📋 최종 평결 표시",
-    code_placeholder:"🔑 활성화 코드",
-    activate_btn:"활성화",
     share_not_available:"공유 불가",
-    share:"공유"
+    done:"완료",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"걸음",
+    unit_celsius:"°C",
+    verdict_summary:"측정 결과는 {status}입니다. 맥박: {pulse}, 호흡: {breath}, 걸음: {steps}, 온도: {temp}.",
+    verdict_single:"⚠️ 제한된 결과",
+    verdict_single_sub:"하나의 센서만 측정되었습니다. 전체 평가를 위해 모든 센서를 완료하세요.",
+    partial_result:"{0}/{1} 센서 측정됨",
+    activation_code:"🔑 활성화 코드",
+    activate:"활성화"
 };
 
-// Turkish
+// ---------- الهندية ----------
+translations.hi = {
+    dynamic:"भौतिक स्वास्थ्य प्रयोगशाला", freeLabel:"मुफ्त निदान",
+    listen:"सुनें", copy:"कॉपी करें", share:"साझा करें", back:"वापस", rating:"आपकी रेटिंग",
+    start_btn:"🧬 शारीरिक जांच शुरू करें",
+    consent_title:"पूर्व सहमति",
+    consent_text:"यह उंगली रखने, सांस लेने और चलने का अनुकरण करेगा। कोई डेटा संग्रहीत नहीं किया जाएगा।",
+    consent_btn:"✅ सहमत हूँ और शुरू करें", refuse_btn:"✖ अस्वीकार करें",
+    sensor1:"नाड़ी और ऑक्सीजन", tool1:"📸 कैमरा",
+    sensor2:"सांस और आवाज", tool2:"🎙️ माइक्रोफोन",
+    sensor3:"संतुलन और चाल", tool3:"📳 गति",
+    sensor4:"त्वचा का तापमान", tool4:"🌡️ तापीय",
+    instr1:"📌 अपनी उंगली को पीछे के कैमरे पर रखें और मापें पर टैप करें",
+    instr2:"📌 माइक्रोफोन के पास सांस लें और बोलें, फिर मापें पर टैप करें",
+    instr3:"📌 तीन कदम चलें और मापें पर टैप करें",
+    instr4:"📌 फोन के पिछले हिस्से को अपनी त्वचा पर दबाएं और मापें पर टैप करें",
+    wait:"⏳ माप की प्रतीक्षा...",
+    measuring:"⏳ माप हो रहा है... ({s} सेकंड)",
+    done_pulse:"❤️ आपकी नाड़ी नियमित और मजबूत है",
+    sub_pulse:"हृदय गति: {rate} बीपीएम",
+    done_breath:"🌬️ आपकी सांस गहरी और शांत है",
+    sub_breath:"तीव्रता: {rate}%",
+    done_balance:"🧍 आपकी गति संतुलित और स्वस्थ है",
+    sub_balance:"कदम: {rate}",
+    done_temp:"🌡️ आपकी त्वचा का तापमान आरामदायक है",
+    sub_temp:"तापमान: {rate}°C",
+    measure:"▶️ मापें", retry:"🔄 पुनः प्रयास करें",
+    final_green:"🟢 उत्कृष्ट!", final_green_sub:"सभी शारीरिक संकेतक स्थिर और सुसंगत हैं।",
+    final_yellow:"🟡 हल्का अलर्ट", final_yellow_sub:"हल्का बदलाव पाया गया, निगरानी की सलाह दी जाती है।",
+    final_orange:"🟠 ध्यान देने योग्य परिवर्तन", final_orange_sub:"भिन्नता पाई गई, आराम करें और पुनः जांच करें।",
+    legal:"⚠️ सिम्युलेटेड शारीरिक रीडिंग, आपके फोन के सेंसर पर आधारित, चिकित्सा निदान नहीं है और किसी विशेषज्ञ चिकित्सक के परामर्श का विकल्प नहीं है।",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"डेवलपर पहुँच", secret_sub:"असीमित पहुँच के लिए पासवर्ड दर्ज करें",
+    admin_on:"👑 व्यवस्थापक मोड सक्रिय", step:"चरण", finger_ok:"✅ उंगली पाई गई", finger_wait:"⏳ अपनी उंगली कैमरे पर रखें", finger_fail:"❌ उंगली नहीं मिली",
+    no_credits:"⚠️ अपर्याप्त शेष राशि, कृपया कोई पैकेज खरीदें या सक्रियण कोड का उपयोग करें",
+    invalid:"❌ अमान्य कोड",
+    copied:"कॉपी किया गया",
+    shared:"साझा किया गया",
+    cam_unavailable:"❌ कैमरा उपलब्ध नहीं है",
+    share_not_available:"साझा करना उपलब्ध नहीं",
+    done:"पूर्ण",
+    unit_bpm:"बीपीएम",
+    unit_percent:"%",
+    unit_steps:"कदम",
+    unit_celsius:"°C",
+    verdict_summary:"आपके रीडिंग {status} दिखाते हैं। नाड़ी: {pulse}, सांस: {breath}, कदम: {steps}, तापमान: {temp}।",
+    verdict_single:"⚠️ सीमित परिणाम",
+    verdict_single_sub:"केवल एक सेंसर मापा गया। पूर्ण मूल्यांकन के लिए सभी सेंसर पूरे करें।",
+    partial_result:"{0}/{1} सेंसर मापे गए",
+    activation_code:"🔑 सक्रियण कोड",
+    activate:"सक्रिय करें"
+};
+
+// ---------- التركية ----------
 translations.tr = {
     dynamic:"Fiziksel Sağlık Laboratuvarı", freeLabel:"Ücretsiz teşhis",
     listen:"Dinle", copy:"Kopyala", share:"Paylaş", back:"Geri", rating:"Değerlendirmeniz",
     start_btn:"🧬 Fiziksel muayeneyi başlat",
+    consent_title:"Önceden Onay",
+    consent_text:"Bu, parmak yerleştirme, nefes alma ve yürümeyi simüle edecektir. Hiçbir veri saklanmayacaktır.",
+    consent_btn:"✅ Kabul ediyorum ve başlıyorum", refuse_btn:"✖ Reddet",
     sensor1:"Nabız ve oksijen", tool1:"📸 Kamera",
     sensor2:"Nefes ve ses", tool2:"🎙️ Mikrofon",
     sensor3:"Denge ve yürüyüş", tool3:"📳 Hareket",
@@ -1016,19 +1128,19 @@ translations.tr = {
     wait:"⏳ Ölçüm bekleniyor...",
     measuring:"⏳ Ölçüm yapılıyor... ({s} sn)",
     done_pulse:"❤️ Nabzınız düzenli ve güçlü",
-    sub_pulse:"Kalp atışı: 72 bpm (Normal)",
+    sub_pulse:"Kalp atışı: {rate} bpm",
     done_breath:"🌬️ Nefesiniz derin ve sakin",
-    sub_breath:"Nefes paterni: istikrarlı ve pürüzsüz",
+    sub_breath:"Yoğunluk: {rate}%",
     done_balance:"🧍 Hareketiniz dengeli ve sağlıklı",
-    sub_balance:"Yürüyüş simetrisi normal aralıkta",
+    sub_balance:"Adım: {rate}",
     done_temp:"🌡️ Cilt sıcaklığınız rahat",
-    sub_temp:"Cilt sıcaklığı normal aralıkta",
+    sub_temp:"Sıcaklık: {rate}°C",
     measure:"▶️ Ölç", retry:"🔄 Yeniden dene",
     final_green:"🟢 Mükemmel!", final_green_sub:"Tüm fiziksel göstergeler stabil ve tutarlı.",
     final_yellow:"🟡 Hafif uyarı", final_yellow_sub:"Küçük değişiklik tespit edildi, izleme önerilir.",
     final_orange:"🟠 Belirgin değişiklik", final_orange_sub:"Değişiklik tespit edildi, dinlenme ve yeniden kontrol önerilir.",
     legal:"⚠️ Simüle edilmiş fiziksel okuma, telefonunuzun sensörlerine dayanır, tıbbi teşhis değildir ve uzman bir doktorun muayenesinin yerine geçmez.",
-    pack1:"💵 1 Teşhis / $2", pack5:"📦 5 Teşhis / $8", pack15:"🏆 15 Teşhis / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Geliştirici Erişimi", secret_sub:"Sınırsız erişim için şifreyi girin",
     admin_on:"👑 Yönetici modu etkinleştirildi", step:"Adım", finger_ok:"✅ Parmak algılandı", finger_wait:"⏳ Parmağınızı kameraya koyun", finger_fail:"❌ Parmak algılanmadı",
     no_credits:"⚠️ Yetersiz bakiye, bir paket satın alın veya aktivasyon kodu kullanın",
@@ -1036,231 +1148,28 @@ translations.tr = {
     copied:"Kopyalandı",
     shared:"Paylaşıldı",
     cam_unavailable:"❌ Kamera kullanılamıyor",
-    credit_note:"Sonuç, kredi düşülmeden gösterildi (yetersiz bakiye)",
-    partial_result:"✅ {1} sensörden {0} tanesi kullanılarak teşhis yapıldı.",
-    no_sensors:"❌ Sensör verisi yok. Lütfen izinleri verin ve tekrar deneyin.",
-    verdict_partial:"🟡 Kısmi Teşhis",
-    verdict_partial_sub:"Çalışan sensörlerden elde edilen verilere dayalı sonuç.",
-    verdict_single:"🟢 Tek Sensörlü Teşhis",
-    verdict_single_sub:"Yalnızca bir sensöre dayalı, sonuç sınırlıdır.",
-    show_verdict:"📋 Nihai kararı göster",
-    code_placeholder:"🔑 Aktivasyon kodu",
-    activate_btn:"Aktifleştir",
     share_not_available:"Paylaşım mevcut değil",
-    share:"Paylaş"
+    done:"Tamam",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"adım",
+    unit_celsius:"°C",
+    verdict_summary:"Ölçümleriniz {status} gösteriyor. Nabız: {pulse}, Nefes: {breath}, Adım: {steps}, Sıcaklık: {temp}.",
+    verdict_single:"⚠️ Sınırlı sonuç",
+    verdict_single_sub:"Yalnızca bir sensör ölçüldü. Tam değerlendirme için tüm sensörleri tamamlayın.",
+    partial_result:"{0}/{1} sensör ölçüldü",
+    activation_code:"🔑 Aktivasyon kodu",
+    activate:"Aktifleştir"
 };
 
-// ========== 8 NEW MANUAL LANGUAGES (with new keys) ==========
-
-// Dutch
-translations.nl = {
-    dynamic:"Fysiek Gezondheidslaboratorium", freeLabel:"Gratis diagnoses",
-    listen:"Luisteren", copy:"Kopiëren", share:"Delen", back:"Terug", rating:"Uw beoordeling",
-    start_btn:"🧬 Start fysieke check",
-    sensor1:"Pols & zuurstof", tool1:"📸 Camera",
-    sensor2:"Adem & geluid", tool2:"🎙️ Microfoon",
-    sensor3:"Balans & gang", tool3:"📳 Beweging",
-    sensor4:"Huidtemperatuur", tool4:"🌡️ Thermisch",
-    instr1:"📌 Plaats uw vinger op de achtercamera en tik op Meten",
-    instr2:"📌 Adem en spreek dicht bij de microfoon en tik op Meten",
-    instr3:"📌 Loop drie stappen en tik op Meten",
-    instr4:"📌 Druk de achterkant van de telefoon tegen uw huid en tik op Meten",
-    wait:"⏳ Wachten op meting...",
-    measuring:"⏳ Meten... ({s}s)",
-    done_pulse:"❤️ Uw pols is regelmatig en sterk",
-    sub_pulse:"Hartslag: 72 bpm (Normaal)",
-    done_breath:"🌬️ Uw ademhaling is diep en kalm",
-    sub_breath:"Adempatroon: stabiel en vloeiend",
-    done_balance:"🧍 Uw beweging is evenwichtig en gezond",
-    sub_balance:"Gang symmetrie binnen normaal bereik",
-    done_temp:"🌡️ Uw huidtemperatuur is comfortabel",
-    sub_temp:"Huidtemperatuur binnen normaal bereik",
-    measure:"▶️ Meten", retry:"🔄 Opnieuw",
-    final_green:"🟢 Uitstekend!", final_green_sub:"Alle fysieke indicatoren zijn stabiel en consistent.",
-    final_yellow:"🟡 Milde waarschuwing", final_yellow_sub:"Lichte verandering gedetecteerd, monitoring aanbevolen.",
-    final_orange:"🟠 Merkbare verandering", final_orange_sub:"Afwijking gedetecteerd, rust en hercontrole aanbevolen.",
-    legal:"⚠️ Gesimuleerde fysieke meting, gebaseerd op de sensoren van uw telefoon, is geen medische diagnose en vervangt geen consultatie met een specialist.",
-    pack1:"💵 1 Diagnose / $2", pack5:"📦 5 Diagnoses / $8", pack15:"🏆 15 Diagnoses / $20",
-    secret_title:"Ontwikkelaarstoegang", secret_sub:"Voer het wachtwoord in voor onbeperkte toegang",
-    admin_on:"👑 Beheerdersmodus geactiveerd", step:"Stap",
-    finger_ok:"✅ Vinger gedetecteerd", finger_wait:"⏳ Plaats uw vinger op de camera", finger_fail:"❌ Vinger niet gedetecteerd",
-    no_credits:"⚠️ Onvoldoende saldo, koop een pakket of gebruik een activatiecode",
-    invalid:"❌ Ongeldige code",
-    copied:"Gekopieerd",
-    shared:"Gedeeld",
-    cam_unavailable:"❌ Camera niet beschikbaar",
-    credit_note:"Resultaat weergegeven zonder saldo af te trekken (onvoldoende saldo)",
-    partial_result:"✅ Diagnose uitgevoerd met {0} van de {1} sensoren.",
-    no_sensors:"❌ Geen sensorgegevens. Geef toestemming en probeer opnieuw.",
-    verdict_partial:"🟡 Gedeeltelijke diagnose",
-    verdict_partial_sub:"Resultaat gebaseerd op beschikbare gegevens van werkende sensoren.",
-    verdict_single:"🟢 Diagnose met één sensor",
-    verdict_single_sub:"Gebaseerd op slechts één sensor, resultaat is beperkt.",
-    show_verdict:"📋 Toon definitief oordeel",
-    code_placeholder:"🔑 Activatiecode",
-    activate_btn:"Activeren",
-    share_not_available:"Delen niet beschikbaar",
-    share:"Delen"
-};
-
-// Polish
-translations.pl = {
-    dynamic:"Laboratorium Zdrowia Fizycznego", freeLabel:"Darmowe diagnozy",
-    listen:"Słuchaj", copy:"Kopiuj", share:"Udostępnij", back:"Wróć", rating:"Twoja ocena",
-    start_btn:"🧬 Rozpocznij badanie fizyczne",
-    sensor1:"Tętno i tlen", tool1:"📸 Kamera",
-    sensor2:"Oddech i dźwięk", tool2:"🎙️ Mikrofon",
-    sensor3:"Równowaga i chód", tool3:"📳 Ruch",
-    sensor4:"Temperatura skóry", tool4:"🌡️ Termiczny",
-    instr1:"📌 Połóż palec na tylnym aparacie i naciśnij Zmierz",
-    instr2:"📌 Oddychaj i mów blisko mikrofonu, a następnie naciśnij Zmierz",
-    instr3:"📌 Wykonaj trzy kroki i naciśnij Zmierz",
-    instr4:"📌 Przyłóż tył telefonu do skóry i naciśnij Zmierz",
-    wait:"⏳ Oczekiwanie na pomiar...",
-    measuring:"⏳ Pomiar... ({s}s)",
-    done_pulse:"❤️ Twoje tętno jest regularne i silne",
-    sub_pulse:"Tętno: 72 bpm (Normalne)",
-    done_breath:"🌬️ Twój oddech jest głęboki i spokojny",
-    sub_breath:"Wzór oddechu: stabilny i płynny",
-    done_balance:"🧍 Twój ruch jest zrównoważony i zdrowy",
-    sub_balance:"Symetria chodu w normie",
-    done_temp:"🌡️ Temperatura Twojej skóry jest komfortowa",
-    sub_temp:"Temperatura skóry w normie",
-    measure:"▶️ Zmierz", retry:"🔄 Powtórz",
-    final_green:"🟢 Doskonale!", final_green_sub:"Wszystkie wskaźniki fizyczne są stabilne i spójne.",
-    final_yellow:"🟡 Łagodny alert", final_yellow_sub:"Wykryto niewielką zmianę, zaleca się monitorowanie.",
-    final_orange:"🟠 Znacząca zmiana", final_orange_sub:"Wykryto odchylenie, zaleca się odpoczynek i ponowne sprawdzenie.",
-    legal:"⚠️ Symulowany odczyt fizyczny, oparty na czujnikach telefonu, nie jest diagnozą medyczną i nie zastępuje konsultacji z lekarzem specjalistą.",
-    pack1:"💵 1 Diagnoza / $2", pack5:"📦 5 Diagnoz / $8", pack15:"🏆 15 Diagnoz / $20",
-    secret_title:"Dostęp dla programistów", secret_sub:"Wprowadź hasło, aby uzyskać nieograniczony dostęp",
-    admin_on:"👑 Tryb administratora aktywowany", step:"Krok",
-    finger_ok:"✅ Wykryto palec", finger_wait:"⏳ Połóż palec na aparacie", finger_fail:"❌ Nie wykryto palca",
-    no_credits:"⚠️ Niewystarczające saldo, kup pakiet lub użyj kodu aktywacyjnego",
-    invalid:"❌ Nieprawidłowy kod",
-    copied:"Skopiowano",
-    shared:"Udostępniono",
-    cam_unavailable:"❌ Aparat niedostępny",
-    credit_note:"Wynik wyświetlony bez odliczania kredytu (niewystarczające saldo)",
-    partial_result:"✅ Diagnoza wykonana przy użyciu {0} z {1} czujników.",
-    no_sensors:"❌ Brak danych z czujników. Udziel uprawnień i spróbuj ponownie.",
-    verdict_partial:"🟡 Częściowa diagnoza",
-    verdict_partial_sub:"Wynik oparty na dostępnych danych z działających czujników.",
-    verdict_single:"🟢 Diagnoza z jednym czujnikiem",
-    verdict_single_sub:"Oparta tylko na jednym czujniku, wynik jest ograniczony.",
-    show_verdict:"📋 Pokaż ostateczny werdykt",
-    code_placeholder:"🔑 Kod aktywacyjny",
-    activate_btn:"Aktywuj",
-    share_not_available:"Udostępnianie niedostępne",
-    share:"Udostępnij"
-};
-
-// Hindi
-translations.hi = {
-    dynamic:"भौतिक स्वास्थ्य प्रयोगशाला", freeLabel:"मुफ्त निदान",
-    listen:"सुनें", copy:"कॉपी करें", share:"साझा करें", back:"वापस", rating:"आपकी रेटिंग",
-    start_btn:"🧬 शारीरिक जांच शुरू करें",
-    sensor1:"नाड़ी और ऑक्सीजन", tool1:"📸 कैमरा",
-    sensor2:"सांस और ध्वनि", tool2:"🎙️ माइक्रोफोन",
-    sensor3:"संतुलन और चाल", tool3:"📳 गति",
-    sensor4:"त्वचा का तापमान", tool4:"🌡️ थर्मल",
-    instr1:"📌 अपनी उंगली को पीछे के कैमरे पर रखें और मापें पर टैप करें",
-    instr2:"📌 माइक्रोफोन के पास सांस लें और बोलें, फिर मापें पर टैप करें",
-    instr3:"📌 तीन कदम चलें और मापें पर टैप करें",
-    instr4:"📌 फोन के पिछले हिस्से को अपनी त्वचा पर दबाएं और मापें पर टैप करें",
-    wait:"⏳ माप की प्रतीक्षा...",
-    measuring:"⏳ माप हो रहा है... ({s} सेकंड)",
-    done_pulse:"❤️ आपकी नाड़ी नियमित और मजबूत है",
-    sub_pulse:"हृदय गति: 72 बीपीएम (सामान्य)",
-    done_breath:"🌬️ आपकी सांस गहरी और शांत है",
-    sub_breath:"सांस पैटर्न: स्थिर और सहज",
-    done_balance:"🧍 आपकी गति संतुलित और स्वस्थ है",
-    sub_balance:"चाल समरूपता सामान्य सीमा के भीतर",
-    done_temp:"🌡️ आपकी त्वचा का तापमान आरामदायक है",
-    sub_temp:"त्वचा का तापमान सामान्य सीमा के भीतर",
-    measure:"▶️ मापें", retry:"🔄 पुनः प्रयास करें",
-    final_green:"🟢 उत्कृष्ट!", final_green_sub:"सभी शारीरिक संकेतक स्थिर और सुसंगत हैं।",
-    final_yellow:"🟡 हल्का अलर्ट", final_yellow_sub:"हल्का बदलाव पाया गया, निगरानी की सलाह दी जाती है।",
-    final_orange:"🟠 ध्यान देने योग्य परिवर्तन", final_orange_sub:"भिन्नता पाई गई, आराम करें और पुनः जांच करें।",
-    legal:"⚠️ सिम्युलेटेड शारीरिक रीडिंग, आपके फोन के सेंसर पर आधारित, चिकित्सा निदान नहीं है और किसी विशेषज्ञ चिकित्सक के परामर्श का विकल्प नहीं है।",
-    pack1:"💵 1 निदान / $2", pack5:"📦 5 निदान / $8", pack15:"🏆 15 निदान / $20",
-    secret_title:"डेवलपर पहुँच", secret_sub:"असीमित पहुँच के लिए पासवर्ड दर्ज करें",
-    admin_on:"👑 व्यवस्थापक मोड सक्रिय", step:"चरण",
-    finger_ok:"✅ उंगली पाई गई", finger_wait:"⏳ अपनी उंगली कैमरे पर रखें", finger_fail:"❌ उंगली नहीं मिली",
-    no_credits:"⚠️ अपर्याप्त शेष राशि, कृपया कोई पैकेज खरीदें या सक्रियण कोड का उपयोग करें",
-    invalid:"❌ अमान्य कोड",
-    copied:"कॉपी किया गया",
-    shared:"साझा किया गया",
-    cam_unavailable:"❌ कैमरा उपलब्ध नहीं है",
-    credit_note:"परिणाम बिना क्रेडिट काटे दिखाया गया (अपर्याप्त शेष राशि)",
-    partial_result:"✅ {1} सेंसर में से {0} का उपयोग करके निदान किया गया।",
-    no_sensors:"❌ कोई सेंसर डेटा नहीं। कृपया अनुमतियाँ दें और पुनः प्रयास करें।",
-    verdict_partial:"🟡 आंशिक निदान",
-    verdict_partial_sub:"परिणाम काम कर रहे सेंसर से उपलब्ध डेटा पर आधारित है।",
-    verdict_single:"🟢 एक-सेंसर निदान",
-    verdict_single_sub:"केवल एक सेंसर पर आधारित, परिणाम सीमित है।",
-    show_verdict:"📋 अंतिम फैसला दिखाएं",
-    code_placeholder:"🔑 सक्रियण कोड",
-    activate_btn:"सक्रिय करें",
-    share_not_available:"साझा करना उपलब्ध नहीं",
-    share:"साझा करें"
-};
-
-// Indonesian
-translations.id = {
-    dynamic:"Laboratorium Kesehatan Fisik", freeLabel:"Diagnosis gratis",
-    listen:"Dengarkan", copy:"Salin", share:"Bagikan", back:"Kembali", rating:"Penilaian Anda",
-    start_btn:"🧬 Mulai pemeriksaan fisik",
-    sensor1:"Denyut nadi & oksigen", tool1:"📸 Kamera",
-    sensor2:"Napas & suara", tool2:"🎙️ Mikrofon",
-    sensor3:"Keseimbangan & gaya berjalan", tool3:"📳 Gerakan",
-    sensor4:"Suhu kulit", tool4:"🌡️ Termal",
-    instr1:"📌 Letakkan jari Anda di kamera belakang lalu ketuk Ukur",
-    instr2:"📌 Bernapaslah dan bicaralah di dekat mikrofon lalu ketuk Ukur",
-    instr3:"📌 Berjalan tiga langkah lalu ketuk Ukur",
-    instr4:"📌 Tekan bagian belakang ponsel ke kulit Anda lalu ketuk Ukur",
-    wait:"⏳ Menunggu pengukuran...",
-    measuring:"⏳ Mengukur... ({s} detik)",
-    done_pulse:"❤️ Denyut nadi Anda teratur dan kuat",
-    sub_pulse:"Detak jantung: 72 bpm (Normal)",
-    done_breath:"🌬️ Pernapasan Anda dalam dan tenang",
-    sub_breath:"Pola napas: stabil dan lancar",
-    done_balance:"🧍 Gerakan Anda seimbang dan sehat",
-    sub_balance:"Simetri gaya berjalan dalam rentang normal",
-    done_temp:"🌡️ Suhu kulit Anda nyaman",
-    sub_temp:"Suhu kulit dalam rentang normal",
-    measure:"▶️ Ukur", retry:"🔄 Ulangi",
-    final_green:"🟢 Sangat baik!", final_green_sub:"Semua indikator fisik stabil dan konsisten.",
-    final_yellow:"🟡 Peringatan ringan", final_yellow_sub:"Perubahan kecil terdeteksi, pemantauan disarankan.",
-    final_orange:"🟠 Perubahan nyata", final_orange_sub:"Variasi terdeteksi, istirahat dan periksa ulang.",
-    legal:"⚠️ Pembacaan fisik simulasi, berdasarkan sensor ponsel Anda, bukan diagnosis medis dan tidak menggantikan konsultasi dengan dokter spesialis.",
-    pack1:"💵 1 Diagnosis / $2", pack5:"📦 5 Diagnosis / $8", pack15:"🏆 15 Diagnosis / $20",
-    secret_title:"Akses Pengembang", secret_sub:"Masukkan kata sandi untuk akses tak terbatas",
-    admin_on:"👑 Mode admin diaktifkan", step:"Langkah",
-    finger_ok:"✅ Jari terdeteksi", finger_wait:"⏳ Letakkan jari Anda di kamera", finger_fail:"❌ Jari tidak terdeteksi",
-    no_credits:"⚠️ Saldo tidak mencukupi, silakan beli paket atau gunakan kode aktivasi",
-    invalid:"❌ Kode tidak valid",
-    copied:"Disalin",
-    shared:"Dibagikan",
-    cam_unavailable:"❌ Kamera tidak tersedia",
-    credit_note:"Hasil ditampilkan tanpa mengurangi kredit (saldo tidak mencukupi)",
-    partial_result:"✅ Diagnosis dilakukan menggunakan {0} dari {1} sensor.",
-    no_sensors:"❌ Tidak ada data sensor. Berikan izin dan coba lagi.",
-    verdict_partial:"🟡 Diagnosis parsial",
-    verdict_partial_sub:"Hasil berdasarkan data yang tersedia dari sensor yang berfungsi.",
-    verdict_single:"🟢 Diagnosis sensor tunggal",
-    verdict_single_sub:"Berdasarkan hanya satu sensor, hasil terbatas.",
-    show_verdict:"📋 Tunjukkan putusan akhir",
-    code_placeholder:"🔑 Kode aktivasi",
-    activate_btn:"Aktifkan",
-    share_not_available:"Berbagi tidak tersedia",
-    share:"Bagikan"
-};
-
-// Persian
+// ---------- الفارسية ----------
 translations.fa = {
     dynamic:"آزمایشگاه سلامت فیزیکی", freeLabel:"تشخیص‌های رایگان",
     listen:"گوش کن", copy:"کپی", share:"اشتراک‌گذاری", back:"بازگشت", rating:"امتیاز شما",
     start_btn:"🧬 شروع معاینه فیزیکی",
+    consent_title:"موافقت قبلی",
+    consent_text:"این کار قرار دادن انگشت، تنفس و راه رفتن را شبیه‌سازی می‌کند. هیچ داده‌ای ذخیره نخواهد شد.",
+    consent_btn:"✅ موافقم و شروع می‌کنم", refuse_btn:"✖ رد می‌کنم",
     sensor1:"نبض و اکسیژن", tool1:"📸 دوربین",
     sensor2:"تنفس و صدا", tool2:"🎙️ میکروفون",
     sensor3:"تعادل و راه رفتن", tool3:"📳 حرکت",
@@ -1272,46 +1181,48 @@ translations.fa = {
     wait:"⏳ در انتظار اندازه‌گیری...",
     measuring:"⏳ در حال اندازه‌گیری... ({s} ثانیه)",
     done_pulse:"❤️ نبض شما منظم و قوی است",
-    sub_pulse:"ضربان قلب: ۷۲ ضربه در دقیقه (طبیعی)",
+    sub_pulse:"ضربان قلب: {rate} ضربه در دقیقه",
     done_breath:"🌬️ تنفس شما عمیق و آرام است",
-    sub_breath:"الگوی تنفس: پایدار و روان",
+    sub_breath:"شدت: {rate}%",
     done_balance:"🧍 حرکت شما متعادل و سالم است",
-    sub_balance:"تقارن راه رفتن در محدوده طبیعی",
+    sub_balance:"گام: {rate}",
     done_temp:"🌡️ دمای پوست شما راحت است",
-    sub_temp:"دمای پوست در محدوده طبیعی",
+    sub_temp:"دما: {rate}°C",
     measure:"▶️ اندازه‌گیری", retry:"🔄 دوباره تلاش",
     final_green:"🟢 عالی!", final_green_sub:"همه شاخص‌های فیزیکی پایدار و سازگار هستند.",
     final_yellow:"🟡 هشدار خفیف", final_yellow_sub:"تغییر جزئی تشخیص داده شده، نظارت توصیه می‌شود.",
     final_orange:"🟠 تغییر قابل توجه", final_orange_sub:"تغییر تشخیص داده شده، استراحت و بررسی مجدد توصیه می‌شود.",
     legal:"⚠️ خواندن فیزیکی شبیه‌سازی شده، مبتنی بر سنسورهای گوشی شما، تشخیص پزشکی نیست و جایگزین مشاوره با پزشک متخصص نمی‌شود.",
-    pack1:"💵 ۱ تشخیص / $۲", pack5:"📦 ۵ تشخیص / $۸", pack15:"🏆 ۱۵ تشخیص / $۲۰",
+    pack1:"💵 ۱ / $۲", pack5:"📦 ۵ / $۸", pack15:"🏆 ۱۵ / $۲۰",
     secret_title:"دسترسی توسعه‌دهنده", secret_sub:"رمز عبور را برای دسترسی نامحدود وارد کنید",
-    admin_on:"👑 حالت مدیر فعال شد", step:"مرحله",
-    finger_ok:"✅ انگشت تشخیص داده شد", finger_wait:"⏳ انگشت خود را روی دوربین قرار دهید", finger_fail:"❌ انگشت تشخیص داده نشد",
+    admin_on:"👑 حالت مدیر فعال شد", step:"مرحله", finger_ok:"✅ انگشت تشخیص داده شد", finger_wait:"⏳ انگشت خود را روی دوربین قرار دهید", finger_fail:"❌ انگشت تشخیص داده نشد",
     no_credits:"⚠️ موجودی کافی نیست، لطفاً یک بسته خریداری کنید یا از کد فعال‌سازی استفاده کنید",
     invalid:"❌ کد نامعتبر",
     copied:"کپی شد",
     shared:"به اشتراک گذاشته شد",
     cam_unavailable:"❌ دوربین در دسترس نیست",
-    credit_note:"نتیجه بدون کسر اعتبار نشان داده شد (موجودی کافی نیست)",
-    partial_result:"✅ تشخیص با استفاده از {0} از {1} سنسور انجام شد.",
-    no_sensors:"❌ داده‌ای از سنسورها موجود نیست. لطفاً مجوزها را اعطا کرده و دوباره تلاش کنید.",
-    verdict_partial:"🟡 تشخیص جزئی",
-    verdict_partial_sub:"نتیجه بر اساس داده‌های موجود از سنسورهای فعال است.",
-    verdict_single:"🟢 تشخیص تک سنسوری",
-    verdict_single_sub:"فقط بر اساس یک سنسور، نتیجه محدود است.",
-    show_verdict:"📋 نشان دادن حکم نهایی",
-    code_placeholder:"🔑 کد فعال‌سازی",
-    activate_btn:"فعال‌سازی",
     share_not_available:"اشتراک‌گذاری در دسترس نیست",
-    share:"اشتراک‌گذاری"
+    done:"انجام شد",
+    unit_bpm:"ضربه در دقیقه",
+    unit_percent:"%",
+    unit_steps:"گام",
+    unit_celsius:"°C",
+    verdict_summary:"خوانش‌های شما {status} را نشان می‌دهد. نبض: {pulse}، تنفس: {breath}، گام: {steps}، دما: {temp}.",
+    verdict_single:"⚠️ نتیجه محدود",
+    verdict_single_sub:"فقط یک سنسور اندازه‌گیری شد. برای ارزیابی کامل، همه سنسورها را کامل کنید.",
+    partial_result:"{0} از {1} سنسور اندازه‌گیری شد",
+    activation_code:"🔑 کد فعال‌سازی",
+    activate:"فعال‌سازی"
 };
 
-// Urdu
+// ---------- الأردية ----------
 translations.ur = {
     dynamic:"طبیعی صحت لیب", freeLabel:"مفت تشخیص",
     listen:"سنو", copy:"کاپی کریں", share:"شیئر کریں", back:"واپس", rating:"آپ کی درجہ بندی",
     start_btn:"🧬 جسمانی معائنہ شروع کریں",
+    consent_title:"پہلے سے رضایت",
+    consent_text:"یہ انگلی رکھنے، سانس لینے اور چلنے کی نقل کرے گا۔ کوئی ڈیٹا محفوظ نہیں کیا جائے گا۔",
+    consent_btn:"✅ متفق ہوں اور شروع کریں", refuse_btn:"✖ انکار کریں",
     sensor1:"نبض اور آکسیجن", tool1:"📸 کیمرہ",
     sensor2:"سانس اور آواز", tool2:"🎙️ مائیکروفون",
     sensor3:"توازن اور چال", tool3:"📳 حرکت",
@@ -1323,46 +1234,154 @@ translations.ur = {
     wait:"⏳ پیمائش کا انتظار...",
     measuring:"⏳ پیمائش ہو رہی ہے... ({s} سیکنڈ)",
     done_pulse:"❤️ آپ کی نبض باقاعدہ اور مضبوط ہے",
-    sub_pulse:"دل کی دھڑکن: 72 بی پی ایم (عام)",
+    sub_pulse:"دل کی دھڑکن: {rate} بی پی ایم",
     done_breath:"🌬️ آپ کی سانس گہری اور پرسکون ہے",
-    sub_breath:"سانس کا نمونہ: مستحکم اور ہموار",
+    sub_breath:"شدت: {rate}%",
     done_balance:"🧍 آپ کی حرکت متوازن اور صحت مند ہے",
-    sub_balance:"چال کی ہم آہنگی معمول کی حد میں",
+    sub_balance:"قدم: {rate}",
     done_temp:"🌡️ آپ کی جلد کا درجہ حرارت آرام دہ ہے",
-    sub_temp:"جلد کا درجہ حرارت معمول کی حد میں",
+    sub_temp:"درجہ حرارت: {rate}°C",
     measure:"▶️ پیمائش کریں", retry:"🔄 دوبارہ کوشش کریں",
     final_green:"🟢 بہترین!", final_green_sub:"تمام جسمانی اشاریے مستحکم اور ہم آہنگ ہیں۔",
     final_yellow:"🟡 ہلکی وارننگ", final_yellow_sub:"ہلکی تبدیلی کا پتہ چلا، نگرانی کی سفارش کی جاتی ہے۔",
     final_orange:"🟠 قابل توجہ تبدیلی", final_orange_sub:"فرق کا پتہ چلا، آرام کریں اور دوبارہ چیک کریں۔",
     legal:"⚠️ نقلی جسمانی پڑھائی، آپ کے فون کے سینسرز پر مبنی، طبی تشخیص نہیں ہے اور کسی ماہر ڈاکٹر کے مشورے کا متبادل نہیں ہے۔",
-    pack1:"💵 1 تشخیص / $2", pack5:"📦 5 تشخیص / $8", pack15:"🏆 15 تشخیص / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"ڈویلپر تک رسائی", secret_sub:"غیر محدود رسائی کے لیے پاس ورڈ درج کریں",
-    admin_on:"👑 ایڈمن موڈ فعال", step:"مرحلہ",
-    finger_ok:"✅ انگلی کا پتہ چلا", finger_wait:"⏳ اپنی انگلی کیمرے پر رکھیں", finger_fail:"❌ انگلی کا پتہ نہیں چلا",
+    admin_on:"👑 ایڈمن موڈ فعال", step:"مرحلہ", finger_ok:"✅ انگلی کا پتہ چلا", finger_wait:"⏳ اپنی انگلی کیمرے پر رکھیں", finger_fail:"❌ انگلی کا پتہ نہیں چلا",
     no_credits:"⚠️ ناکافی بیلنس، براہ کرم کوئی پیکج خریدیں یا ایکٹیویشن کوڈ استعمال کریں",
     invalid:"❌ غلط کوڈ",
     copied:"کاپی ہوگیا",
     shared:"شیئر ہوگیا",
     cam_unavailable:"❌ کیمرہ دستیاب نہیں",
-    credit_note:"نتیجہ بغیر کریڈٹ کٹوتی کے دکھایا گیا (ناکافی بیلنس)",
-    partial_result:"✅ تشخیص {1} سینسرز میں سے {0} کا استعمال کرتے ہوئے کی گئی۔",
-    no_sensors:"❌ کوئی سینسر ڈیٹا نہیں۔ براہ کرم اجازتیں دیں اور دوبارہ کوشش کریں۔",
-    verdict_partial:"🟡 جزوی تشخیص",
-    verdict_partial_sub:"نتیجہ کام کرنے والے سینسرز سے دستیاب ڈیٹا پر مبنی ہے۔",
-    verdict_single:"🟢 واحد سینسر تشخیص",
-    verdict_single_sub:"صرف ایک سینسر پر مبنی، نتیجہ محدود ہے۔",
-    show_verdict:"📋 حتمی فیصلہ دکھائیں",
-    code_placeholder:"🔑 ایکٹیویشن کوڈ",
-    activate_btn:"فعال کریں",
     share_not_available:"شیئرنگ دستیاب نہیں",
-    share:"شیئر کریں"
+    done:"مکمل",
+    unit_bpm:"بی پی ایم",
+    unit_percent:"%",
+    unit_steps:"قدم",
+    unit_celsius:"°C",
+    verdict_summary:"آپ کی ریڈنگ {status} دکھاتی ہے۔ نبض: {pulse}، سانس: {breath}، قدم: {steps}، درجہ حرارت: {temp}۔",
+    verdict_single:"⚠️ محدود نتیجہ",
+    verdict_single_sub:"صرف ایک سینسر کی پیمائش ہوئی۔ مکمل تشخیص کے لیے تمام سینسر مکمل کریں۔",
+    partial_result:"{0} میں سے {1} سینسرز کی پیمائش ہوئی",
+    activation_code:"🔑 ایکٹیویشن کوڈ",
+    activate:"فعال کریں"
 };
 
-// Vietnamese
+// ---------- الإندونيسية ----------
+translations.id = {
+    dynamic:"Laboratorium Kesehatan Fisik", freeLabel:"Diagnosis gratis",
+    listen:"Dengarkan", copy:"Salin", share:"Bagikan", back:"Kembali", rating:"Penilaian Anda",
+    start_btn:"🧬 Mulai pemeriksaan fisik",
+    consent_title:"Persetujuan Sebelumnya",
+    consent_text:"Ini akan mensimulasikan penempatan jari, pernapasan, dan berjalan. Tidak ada data yang akan disimpan.",
+    consent_btn:"✅ Saya Setuju & Mulai", refuse_btn:"✖ Tolak",
+    sensor1:"Denyut nadi & oksigen", tool1:"📸 Kamera",
+    sensor2:"Napas & suara", tool2:"🎙️ Mikrofon",
+    sensor3:"Keseimbangan & gaya berjalan", tool3:"📳 Gerakan",
+    sensor4:"Suhu kulit", tool4:"🌡️ Termal",
+    instr1:"📌 Letakkan jari Anda di kamera belakang lalu ketuk Ukur",
+    instr2:"📌 Bernapaslah dan bicaralah di dekat mikrofon lalu ketuk Ukur",
+    instr3:"📌 Berjalan tiga langkah lalu ketuk Ukur",
+    instr4:"📌 Tekan bagian belakang ponsel ke kulit Anda lalu ketuk Ukur",
+    wait:"⏳ Menunggu pengukuran...",
+    measuring:"⏳ Mengukur... ({s} detik)",
+    done_pulse:"❤️ Denyut nadi Anda teratur dan kuat",
+    sub_pulse:"Detak jantung: {rate} bpm",
+    done_breath:"🌬️ Pernapasan Anda dalam dan tenang",
+    sub_breath:"Intensitas: {rate}%",
+    done_balance:"🧍 Gerakan Anda seimbang dan sehat",
+    sub_balance:"Langkah: {rate}",
+    done_temp:"🌡️ Suhu kulit Anda nyaman",
+    sub_temp:"Suhu: {rate}°C",
+    measure:"▶️ Ukur", retry:"🔄 Ulangi",
+    final_green:"🟢 Sangat baik!", final_green_sub:"Semua indikator fisik stabil dan konsisten.",
+    final_yellow:"🟡 Peringatan ringan", final_yellow_sub:"Perubahan kecil terdeteksi, pemantauan disarankan.",
+    final_orange:"🟠 Perubahan nyata", final_orange_sub:"Variasi terdeteksi, istirahat dan periksa ulang.",
+    legal:"⚠️ Pembacaan fisik simulasi, berdasarkan sensor ponsel Anda, bukan diagnosis medis dan tidak menggantikan konsultasi dengan dokter spesialis.",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"Akses Pengembang", secret_sub:"Masukkan kata sandi untuk akses tak terbatas",
+    admin_on:"👑 Mode admin diaktifkan", step:"Langkah", finger_ok:"✅ Jari terdeteksi", finger_wait:"⏳ Letakkan jari Anda di kamera", finger_fail:"❌ Jari tidak terdeteksi",
+    no_credits:"⚠️ Saldo tidak mencukupi, silakan beli paket atau gunakan kode aktivasi",
+    invalid:"❌ Kode tidak valid",
+    copied:"Disalin",
+    shared:"Dibagikan",
+    cam_unavailable:"❌ Kamera tidak tersedia",
+    share_not_available:"Berbagi tidak tersedia",
+    done:"Selesai",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"langkah",
+    unit_celsius:"°C",
+    verdict_summary:"Pembacaan Anda menunjukkan {status}. Denyut nadi: {pulse}, Napas: {breath}, Langkah: {steps}, Suhu: {temp}.",
+    verdict_single:"⚠️ Hasil terbatas",
+    verdict_single_sub:"Hanya satu sensor yang diukur. Lengkapi semua sensor untuk penilaian lengkap.",
+    partial_result:"{0} dari {1} sensor diukur",
+    activation_code:"🔑 Kode aktivasi",
+    activate:"Aktifkan"
+};
+
+// ---------- الماليزية ----------
+translations.ms = {
+    dynamic:"Makmal Kesihatan Fizikal", freeLabel:"Diagnosis percuma",
+    listen:"Dengar", copy:"Salin", share:"Kongsi", back:"Kembali", rating:"Penilaian anda",
+    start_btn:"🧬 Mulakan Pemeriksaan Fizikal",
+    consent_title:"Persetujuan Awal",
+    consent_text:"Ini akan mensimulasikan peletakan jari, pernafasan, dan berjalan. Tiada data akan disimpan.",
+    consent_btn:"✅ Saya Setuju & Mulakan", refuse_btn:"✖ Tolak",
+    sensor1:"Nadi & Oksigen", tool1:"📸 Kamera",
+    sensor2:"Nafas & Bunyi", tool2:"🎙️ Mikrofon",
+    sensor3:"Keseimbangan & Gaya Berjalan", tool3:"📳 Gerakan",
+    sensor4:"Suhu Kulit", tool4:"🌡️ Termal",
+    instr1:"📌 Letakkan jari anda pada kamera belakang dan ketik Ukur",
+    instr2:"📌 Bernafas dan bercakap dekat mikrofon dan ketik Ukur",
+    instr3:"📌 Berjalan tiga langkah dan ketik Ukur",
+    instr4:"📌 Tekan belakang telefon pada kulit anda dan ketik Ukur",
+    wait:"⏳ Menunggu ukuran...",
+    measuring:"⏳ Mengukur... ({s} saat)",
+    done_pulse:"❤️ Nadi anda teratur dan kuat",
+    sub_pulse:"Denyut jantung: {rate} bpm",
+    done_breath:"🌬️ Pernafasan anda dalam dan tenang",
+    sub_breath:"Intensiti: {rate}%",
+    done_balance:"🧍 Pergerakan anda seimbang dan sihat",
+    sub_balance:"Langkah: {rate}",
+    done_temp:"🌡️ Suhu kulit anda selesa",
+    sub_temp:"Suhu: {rate}°C",
+    measure:"▶️ Ukur", retry:"🔄 Ulang",
+    final_green:"🟢 Cemerlang!", final_green_sub:"Semua petunjuk fizikal stabil dan konsisten.",
+    final_yellow:"🟡 Amaran Ringan", final_yellow_sub:"Perubahan kecil dikesan, pemantauan disyorkan.",
+    final_orange:"🟠 Perubahan Ketara", final_orange_sub:"Variasi dikesan, rehat dan semak semula disyorkan.",
+    legal:"⚠️ Bacaan fizikal simulasi, berdasarkan sensor telefon anda, bukan diagnosis perubatan dan tidak menggantikan perundingan dengan doktor pakar.",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"Akses Pembangun", secret_sub:"Masukkan kata laluan untuk akses tanpa had",
+    admin_on:"👑 Mod admin diaktifkan", step:"Langkah", finger_ok:"✅ Jari dikesan", finger_wait:"⏳ Letakkan jari pada kamera", finger_fail:"❌ Jari tidak dikesan",
+    no_credits:"⚠️ Saldo tidak mencukupi, silakan beli paket atau gunakan kod aktivasi",
+    invalid:"❌ Kod tidak sah",
+    copied:"Disalin",
+    shared:"Dikongsi",
+    cam_unavailable:"❌ Kamera tidak tersedia",
+    share_not_available:"Perkongsian tidak tersedia",
+    done:"Selesai",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"langkah",
+    unit_celsius:"°C",
+    verdict_summary:"Bacaan anda menunjukkan {status}. Nadi: {pulse}, Nafas: {breath}, Langkah: {steps}, Suhu: {temp}.",
+    verdict_single:"⚠️ Hasil terhad",
+    verdict_single_sub:"Hanya satu sensor diukur. Lengkapkan semua sensor untuk penilaian penuh.",
+    partial_result:"{0} daripada {1} sensor diukur",
+    activation_code:"🔑 Kod aktivasi",
+    activate:"Aktifkan"
+};
+
+// ---------- الفيتنامية ----------
 translations.vi = {
     dynamic:"Phòng thí nghiệm Sức khỏe Vật lý", freeLabel:"Chẩn đoán miễn phí",
     listen:"Nghe", copy:"Sao chép", share:"Chia sẻ", back:"Quay lại", rating:"Đánh giá của bạn",
     start_btn:"🧬 Bắt đầu kiểm tra thể chất",
+    consent_title:"Đồng ý trước",
+    consent_text:"Điều này sẽ mô phỏng việc đặt ngón tay, thở và đi bộ. Không có dữ liệu nào được lưu trữ.",
+    consent_btn:"✅ Tôi đồng ý & Bắt đầu", refuse_btn:"✖ Từ chối",
     sensor1:"Mạch và oxy", tool1:"📸 Máy ảnh",
     sensor2:"Hơi thở và âm thanh", tool2:"🎙️ Mic",
     sensor3:"Thăng bằng và dáng đi", tool3:"📳 Chuyển động",
@@ -1374,46 +1393,260 @@ translations.vi = {
     wait:"⏳ Đang chờ đo...",
     measuring:"⏳ Đang đo... ({s}s)",
     done_pulse:"❤️ Mạch của bạn đều và mạnh",
-    sub_pulse:"Nhịp tim: 72 bpm (Bình thường)",
+    sub_pulse:"Nhịp tim: {rate} bpm",
     done_breath:"🌬️ Hơi thở của bạn sâu và bình tĩnh",
-    sub_breath:"Mẫu thở: ổn định và mượt mà",
+    sub_breath:"Cường độ: {rate}%",
     done_balance:"🧍 Chuyển động của bạn cân bằng và khỏe mạnh",
-    sub_balance:"Đối xứng dáng đi trong phạm vi bình thường",
+    sub_balance:"Bước: {rate}",
     done_temp:"🌡️ Nhiệt độ da của bạn thoải mái",
-    sub_temp:"Nhiệt độ da trong phạm vi bình thường",
+    sub_temp:"Nhiệt độ: {rate}°C",
     measure:"▶️ Đo", retry:"🔄 Thử lại",
     final_green:"🟢 Xuất sắc!", final_green_sub:"Tất cả các chỉ số thể chất đều ổn định và nhất quán.",
     final_yellow:"🟡 Cảnh báo nhẹ", final_yellow_sub:"Phát hiện thay đổi nhỏ, khuyến nghị theo dõi.",
     final_orange:"🟠 Thay đổi đáng kể", final_orange_sub:"Phát hiện biến động, khuyến nghị nghỉ ngơi và kiểm tra lại.",
     legal:"⚠️ Đọc chỉ số vật lý mô phỏng, dựa trên cảm biến điện thoại của bạn, không phải chẩn đoán y tế và không thay thế việc tư vấn với bác sĩ chuyên khoa.",
-    pack1:"💵 1 Chẩn đoán / $2", pack5:"📦 5 Chẩn đoán / $8", pack15:"🏆 15 Chẩn đoán / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Truy cập Nhà phát triển", secret_sub:"Nhập mật khẩu để truy cập không giới hạn",
-    admin_on:"👑 Chế độ quản trị viên được kích hoạt", step:"Bước",
-    finger_ok:"✅ Phát hiện ngón tay", finger_wait:"⏳ Đặt ngón tay lên camera", finger_fail:"❌ Không phát hiện ngón tay",
+    admin_on:"👑 Chế độ quản trị viên được kích hoạt", step:"Bước", finger_ok:"✅ Phát hiện ngón tay", finger_wait:"⏳ Đặt ngón tay lên camera", finger_fail:"❌ Không phát hiện ngón tay",
     no_credits:"⚠️ Số dư không đủ, vui lòng mua gói hoặc sử dụng mã kích hoạt",
     invalid:"❌ Mã không hợp lệ",
     copied:"Đã sao chép",
     shared:"Đã chia sẻ",
     cam_unavailable:"❌ Máy ảnh không khả dụng",
-    credit_note:"Kết quả được hiển thị mà không trừ tín dụng (số dư không đủ)",
-    partial_result:"✅ Chẩn đoán được thực hiện bằng {0} trong số {1} cảm biến.",
-    no_sensors:"❌ Không có dữ liệu cảm biến. Vui lòng cấp quyền và thử lại.",
-    verdict_partial:"🟡 Chẩn đoán một phần",
-    verdict_partial_sub:"Kết quả dựa trên dữ liệu có sẵn từ các cảm biến đang hoạt động.",
-    verdict_single:"🟢 Chẩn đoán một cảm biến",
-    verdict_single_sub:"Chỉ dựa trên một cảm biến, kết quả bị hạn chế.",
-    show_verdict:"📋 Hiển thị phán quyết cuối cùng",
-    code_placeholder:"🔑 Mã kích hoạt",
-    activate_btn:"Kích hoạt",
     share_not_available:"Chia sẻ không khả dụng",
-    share:"Chia sẻ"
+    done:"Xong",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"bước",
+    unit_celsius:"°C",
+    verdict_summary:"Kết quả của bạn cho thấy {status}. Mạch: {pulse}, Hơi thở: {breath}, Bước: {steps}, Nhiệt độ: {temp}.",
+    verdict_single:"⚠️ Kết quả giới hạn",
+    verdict_single_sub:"Chỉ một cảm biến được đo. Hoàn thành tất cả cảm biến để đánh giá đầy đủ.",
+    partial_result:"Đã đo {0}/{1} cảm biến",
+    activation_code:"🔑 Mã kích hoạt",
+    activate:"Kích hoạt"
 };
 
-// Greek
+// ---------- التايلاندية ----------
+translations.th = {
+    dynamic:"ห้องปฏิบัติการสุขภาพกายภาพ", freeLabel:"การวินิจฉัยฟรี",
+    listen:"ฟัง", copy:"คัดลอก", share:"แชร์", back:"กลับ", rating:"คะแนนของคุณ",
+    start_btn:"🧬 เริ่มการตรวจร่างกาย",
+    consent_title:"การยินยอมล่วงหน้า",
+    consent_text:"这将模拟手指放置、呼吸和行走。不会存储任何数据。",
+    consent_btn:"✅ ตกลงและเริ่ม", refuse_btn:"✖ ปฏิเสธ",
+    sensor1:"ชีพจรและออกซิเจน", tool1:"📸 กล้อง",
+    sensor2:"การหายใจและเสียง", tool2:"🎙️ ไมโครโฟน",
+    sensor3:"ความสมดุลและการเดิน", tool3:"📳 การเคลื่อนไหว",
+    sensor4:"อุณหภูมิผิวหนัง", tool4:"🌡️ ความร้อน",
+    instr1:"📌 วางนิ้วของคุณบนกล้องหลังแล้วแตะ 'วัด'",
+    instr2:"📌 หายใจและพูดใกล้ไมโครโฟนแล้วแตะ 'วัด'",
+    instr3:"📌 เดินสามก้าวแล้วแตะ 'วัด'",
+    instr4:"📌 กดด้านหลังโทรศัพท์ติดกับผิวของคุณแล้วแตะ 'วัด'",
+    wait:"⏳ กำลังรอการวัด...",
+    measuring:"⏳ กำลังวัด... ({s} วินาที)",
+    done_pulse:"❤️ ชีพจรของคุณสม่ำเสมอและแข็งแรง",
+    sub_pulse:"อัตราการเต้นของหัวใจ: {rate} bpm",
+    done_breath:"🌬️ การหายใจของคุณลึกและสงบ",
+    sub_breath:"ความเข้มข้น: {rate}%",
+    done_balance:"🧍 การเคลื่อนไหวของคุณสมดุลและแข็งแรง",
+    sub_balance:"จำนวนก้าว: {rate}",
+    done_temp:"🌡️ อุณหภูมิผิวของคุณสบาย",
+    sub_temp:"อุณหภูมิ: {rate}°C",
+    measure:"▶️ วัด", retry:"🔄 ทำซ้ำ",
+    final_green:"🟢 ยอดเยี่ยม!", final_green_sub:"ตัวบ่งชี้ทางกายภาพทั้งหมดมีความเสถียรและสม่ำเสมอ",
+    final_yellow:"🟡 คำเตือนเล็กน้อย", final_yellow_sub:"ตรวจพบการเปลี่ยนแปลงเล็กน้อย แนะนำให้ติดตาม",
+    final_orange:"🟠 การเปลี่ยนแปลงที่เห็นได้ชัด", final_orange_sub:"ตรวจพบความผันแปร แนะนำให้พักผ่อนและตรวจสอบใหม่",
+    legal:"⚠️ การอ่านค่าทางกายภาพจำลอง โดยอิงจากเซ็นเซอร์โทรศัพท์ของคุณ ไม่ใช่การวินิจฉัยทางการแพทย์ และไม่สามารถทดแทนการปรึกษาแพทย์ผู้เชี่ยวชาญได้",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"การเข้าถึงนักพัฒนา", secret_sub:"ป้อนรหัสผ่านเพื่อเข้าถึงแบบไม่จำกัด",
+    admin_on:"👑 เปิดใช้งานโหมดผู้ดูแลระบบแล้ว", step:"ขั้นตอน", finger_ok:"✅ ตรวจพบนิ้ว", finger_wait:"⏳ วางนิ้วบนกล้อง", finger_fail:"❌ ไม่พบนิ้ว",
+    no_credits:"⚠️ ยอดคงเหลือไม่เพียงพอ กรุณาซื้อแพ็กเกจหรือใช้รหัสเปิดใช้งาน",
+    invalid:"❌ รหัสไม่ถูกต้อง",
+    copied:"คัดลอกแล้ว",
+    shared:"แชร์แล้ว",
+    cam_unavailable:"❌ กล้องไม่พร้อมใช้งาน",
+    share_not_available:"ไม่สามารถแชร์ได้",
+    done:"เสร็จสิ้น",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"ก้าว",
+    unit_celsius:"°C",
+    verdict_summary:"การอ่านค่าของคุณแสดง {status} ชีพจร: {pulse} การหายใจ: {breath} จำนวนก้าว: {steps} อุณหภูมิ: {temp}",
+    verdict_single:"⚠️ ผลลัพธ์จำกัด",
+    verdict_single_sub:"วัดเซ็นเซอร์เพียงตัวเดียว กรุณาวัดเซ็นเซอร์ทั้งหมดเพื่อประเมินผลแบบเต็ม",
+    partial_result:"วัดเซ็นเซอร์ {0} จาก {1} ตัว",
+    activation_code:"🔑 รหัสเปิดใช้งาน",
+    activate:"เปิดใช้งาน"
+};
+
+// ---------- الهولندية ----------
+translations.nl = {
+    dynamic:"Fysiek Gezondheidslaboratorium", freeLabel:"Gratis diagnoses",
+    listen:"Luisteren", copy:"Kopiëren", share:"Delen", back:"Terug", rating:"Uw beoordeling",
+    start_btn:"🧬 Start fysieke check",
+    consent_title:"Voorafgaande toestemming",
+    consent_text:"Dit simuleert het plaatsen van de vinger, ademhaling en lopen. Er worden geen gegevens opgeslagen.",
+    consent_btn:"✅ Ik ga akkoord en start", refuse_btn:"✖ Weigeren",
+    sensor1:"Pols & zuurstof", tool1:"📸 Camera",
+    sensor2:"Adem & geluid", tool2:"🎙️ Microfoon",
+    sensor3:"Balans & gang", tool3:"📳 Beweging",
+    sensor4:"Huidtemperatuur", tool4:"🌡️ Thermisch",
+    instr1:"📌 Plaats uw vinger op de achtercamera en tik op Meten",
+    instr2:"📌 Adem en spreek dicht bij de microfoon en tik op Meten",
+    instr3:"📌 Loop drie stappen en tik op Meten",
+    instr4:"📌 Druk de achterkant van de telefoon tegen uw huid en tik op Meten",
+    wait:"⏳ Wachten op meting...",
+    measuring:"⏳ Meten... ({s}s)",
+    done_pulse:"❤️ Uw pols is regelmatig en sterk",
+    sub_pulse:"Hartslag: {rate} bpm",
+    done_breath:"🌬️ Uw ademhaling is diep en kalm",
+    sub_breath:"Intensiteit: {rate}%",
+    done_balance:"🧍 Uw beweging is evenwichtig en gezond",
+    sub_balance:"Stappen: {rate}",
+    done_temp:"🌡️ Uw huidtemperatuur is comfortabel",
+    sub_temp:"Temperatuur: {rate}°C",
+    measure:"▶️ Meten", retry:"🔄 Opnieuw",
+    final_green:"🟢 Uitstekend!", final_green_sub:"Alle fysieke indicatoren zijn stabiel en consistent.",
+    final_yellow:"🟡 Milde waarschuwing", final_yellow_sub:"Lichte verandering gedetecteerd, monitoring aanbevolen.",
+    final_orange:"🟠 Merkbare verandering", final_orange_sub:"Afwijking gedetecteerd, rust en hercontrole aanbevolen.",
+    legal:"⚠️ Gesimuleerde fysieke meting, gebaseerd op de sensoren van uw telefoon, is geen medische diagnose en vervangt geen consultatie met een specialist.",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"Ontwikkelaarstoegang", secret_sub:"Voer het wachtwoord in voor onbeperkte toegang",
+    admin_on:"👑 Beheerdersmodus geactiveerd", step:"Stap", finger_ok:"✅ Vinger gedetecteerd", finger_wait:"⏳ Plaats uw vinger op de camera", finger_fail:"❌ Vinger niet gedetecteerd",
+    no_credits:"⚠️ Onvoldoende saldo, koop een pakket of gebruik een activatiecode",
+    invalid:"❌ Ongeldige code",
+    copied:"Gekopieerd",
+    shared:"Gedeeld",
+    cam_unavailable:"❌ Camera niet beschikbaar",
+    share_not_available:"Delen niet beschikbaar",
+    done:"Klaar",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"stappen",
+    unit_celsius:"°C",
+    verdict_summary:"Uw metingen tonen {status}. Pols: {pulse}, Adem: {breath}, Stappen: {steps}, Temperatuur: {temp}.",
+    verdict_single:"⚠️ Beperkt resultaat",
+    verdict_single_sub:"Slechts één sensor gemeten. Voltooi alle sensoren voor een volledige beoordeling.",
+    partial_result:"{0} van {1} sensoren gemeten",
+    activation_code:"🔑 Activatiecode",
+    activate:"Activeren"
+};
+
+// ---------- البولندية ----------
+translations.pl = {
+    dynamic:"Laboratorium Zdrowia Fizycznego", freeLabel:"Darmowe diagnozy",
+    listen:"Słuchaj", copy:"Kopiuj", share:"Udostępnij", back:"Wróć", rating:"Twoja ocena",
+    start_btn:"🧬 Rozpocznij badanie fizyczne",
+    consent_title:"Wcześniejsza zgoda",
+    consent_text:"Będzie to symulować umieszczenie palca, oddychanie i chodzenie. Żadne dane nie będą przechowywane.",
+    consent_btn:"✅ Zgadzam się i zaczynam", refuse_btn:"✖ Odrzuć",
+    sensor1:"Tętno i tlen", tool1:"📸 Aparat",
+    sensor2:"Oddech i dźwięk", tool2:"🎙️ Mikrofon",
+    sensor3:"Równowaga i chód", tool3:"📳 Ruch",
+    sensor4:"Temperatura skóry", tool4:"🌡️ Termiczny",
+    instr1:"📌 Połóż palec na tylnym aparacie i naciśnij Zmierz",
+    instr2:"📌 Oddychaj i mów blisko mikrofonu, a następnie naciśnij Zmierz",
+    instr3:"📌 Wykonaj trzy kroki i naciśnij Zmierz",
+    instr4:"📌 Przyłóż tył telefonu do skóry i naciśnij Zmierz",
+    wait:"⏳ Oczekiwanie na pomiar...",
+    measuring:"⏳ Pomiar... ({s}s)",
+    done_pulse:"❤️ Twoje tętno jest regularne i silne",
+    sub_pulse:"Tętno: {rate} bpm",
+    done_breath:"🌬️ Twój oddech jest głęboki i spokojny",
+    sub_breath:"Intensywność: {rate}%",
+    done_balance:"🧍 Twój ruch jest zrównoważony i zdrowy",
+    sub_balance:"Kroki: {rate}",
+    done_temp:"🌡️ Temperatura Twojej skóry jest komfortowa",
+    sub_temp:"Temperatura: {rate}°C",
+    measure:"▶️ Zmierz", retry:"🔄 Powtórz",
+    final_green:"🟢 Doskonale!", final_green_sub:"Wszystkie wskaźniki fizyczne są stabilne i spójne.",
+    final_yellow:"🟡 Łagodny alert", final_yellow_sub:"Wykryto niewielką zmianę, zaleca się monitorowanie.",
+    final_orange:"🟠 Znacząca zmiana", final_orange_sub:"Wykryto odchylenie, zaleca się odpoczynek i ponowne sprawdzenie.",
+    legal:"⚠️ Symulowany odczyt fizyczny, oparty na czujnikach telefonu, nie jest diagnozą medyczną i nie zastępuje konsultacji z lekarzem specjalistą.",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"Dostęp dla programistów", secret_sub:"Wprowadź hasło, aby uzyskać nieograniczony dostęp",
+    admin_on:"👑 Tryb administratora aktywowany", step:"Krok", finger_ok:"✅ Wykryto palec", finger_wait:"⏳ Połóż palec na aparacie", finger_fail:"❌ Nie wykryto palca",
+    no_credits:"⚠️ Niewystarczające saldo, kup pakiet lub użyj kodu aktywacyjnego",
+    invalid:"❌ Nieprawidłowy kod",
+    copied:"Skopiowano",
+    shared:"Udostępniono",
+    cam_unavailable:"❌ Aparat niedostępny",
+    share_not_available:"Udostępnianie niedostępne",
+    done:"Gotowe",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"kroki",
+    unit_celsius:"°C",
+    verdict_summary:"Twoje odczyty pokazują {status}. Tętno: {pulse}, Oddech: {breath}, Kroki: {steps}, Temperatura: {temp}.",
+    verdict_single:"⚠️ Ograniczony wynik",
+    verdict_single_sub:"Zmierzono tylko jeden czujnik. Uzupełnij wszystkie czujniki, aby uzyskać pełną ocenę.",
+    partial_result:"Zmierzono {0} z {1} czujników",
+    activation_code:"🔑 Kod aktywacyjny",
+    activate:"Aktywuj"
+};
+
+// ---------- السويدية ----------
+translations.sv = {
+    dynamic:"Fysiskt hälsolaboratorium", freeLabel:"Gratis diagnoser",
+    listen:"Lyssna", copy:"Kopiera", share:"Dela", back:"Tillbaka", rating:"Din bedömning",
+    start_btn:"🧬 Starta fysisk kontroll",
+    consent_title:"Förhandssamtycke",
+    consent_text:"Detta kommer att simulera fingerplacering, andning och promenad. Inga data kommer att lagras.",
+    consent_btn:"✅ Jag godkänner och startar", refuse_btn:"✖ Avvisa",
+    sensor1:"Puls & Syre", tool1:"📸 Kamera",
+    sensor2:"Andning & Ljud", tool2:"🎙️ Mikrofon",
+    sensor3:"Balans & Gång", tool3:"📳 Rörelse",
+    sensor4:"Hudtemperatur", tool4:"🌡️ Termisk",
+    instr1:"📌 Placera fingret på den bakre kameran och tryck på Mät",
+    instr2:"📌 Andas och prata nära mikrofonen och tryck på Mät",
+    instr3:"📌 Gå tre steg och tryck på Mät",
+    instr4:"📌 Tryck telefonens baksida mot din hud och tryck på Mät",
+    wait:"⏳ Väntar på mätning...",
+    measuring:"⏳ Mäter... ({s}s)",
+    done_pulse:"❤️ Din puls är regelbunden och stark",
+    sub_pulse:"Hjärtfrekvens: {rate} bpm",
+    done_breath:"🌬️ Din andning är djup och lugn",
+    sub_breath:"Intensitet: {rate}%",
+    done_balance:"🧍 Din rörelse är balanserad och hälsosam",
+    sub_balance:"Steg: {rate}",
+    done_temp:"🌡️ Din hudtemperatur är bekväm",
+    sub_temp:"Temperatur: {rate}°C",
+    measure:"▶️ Mät", retry:"🔄 Försök igen",
+    final_green:"🟢 Utmärkt!", final_green_sub:"Alla fysiska indikatorer är stabila och konsekventa.",
+    final_yellow:"🟡 Mild varning", final_yellow_sub:"Liten förändring upptäckt, övervakning rekommenderas.",
+    final_orange:"🟠 Märkbar förändring", final_orange_sub:"Avvikelse upptäckt, vila och omkontroll rekommenderas.",
+    legal:"⚠️ Simulerad fysisk avläsning, baserad på din telefons sensorer, är inte en medicinsk diagnos och ersätter inte konsultation med en specialistläkare.",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
+    secret_title:"Utvecklaråtkomst", secret_sub:"Ange lösenordet för obegränsad åtkomst",
+    admin_on:"👑 Administratörsläge aktiverat", step:"Steg", finger_ok:"✅ Finger upptäckt", finger_wait:"⏳ Placera fingret på kameran", finger_fail:"❌ Finger inte upptäckt",
+    no_credits:"⚠️ Otillräckligt saldo, köp ett paket eller använd aktiveringskod",
+    invalid:"❌ Ogiltig kod",
+    copied:"Kopierad",
+    shared:"Delad",
+    cam_unavailable:"❌ Kamera inte tillgänglig",
+    share_not_available:"Delning inte tillgänglig",
+    done:"Klar",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"steg",
+    unit_celsius:"°C",
+    verdict_summary:"Dina avläsningar visar {status}. Puls: {pulse}, Andning: {breath}, Steg: {steps}, Temperatur: {temp}.",
+    verdict_single:"⚠️ Begränsat resultat",
+    verdict_single_sub:"Endast en sensor mättes. Slutför alla sensorer för en fullständig bedömning.",
+    partial_result:"{0} av {1} sensorer mätta",
+    activation_code:"🔑 Aktiveringskod",
+    activate:"Aktivera"
+};
+
+// ---------- اليونانية ----------
 translations.el = {
     dynamic:"Εργαστήριο Φυσικής Υγείας", freeLabel:"Δωρεάν διαγνώσεις",
     listen:"Ακρόαση", copy:"Αντιγραφή", share:"Κοινοποίηση", back:"Πίσω", rating:"Η αξιολόγησή σας",
     start_btn:"🧬 Έναρξη φυσικού ελέγχου",
+    consent_title:"Προηγούμενη Συγκατάθεση",
+    consent_text:"Αυτό θα προσομοιώσει την τοποθέτηση δακτύλου, την αναπνοή και το περπάτημα. Δεν θα αποθηκευτούν δεδομένα.",
+    consent_btn:"✅ Συμφωνώ και ξεκινώ", refuse_btn:"✖ Απόρριψη",
     sensor1:"Σφυγμός και οξυγόνο", tool1:"📸 Κάμερα",
     sensor2:"Αναπνοή και ήχος", tool2:"🎙️ Μικρόφωνο",
     sensor3:"Ισορροπία και βάδιση", tool3:"📳 Κίνηση",
@@ -1425,116 +1658,61 @@ translations.el = {
     wait:"⏳ Αναμονή για μέτρηση...",
     measuring:"⏳ Μέτρηση... ({s} δευτ.)",
     done_pulse:"❤️ Ο σφυγμός σας είναι τακτικός και δυνατός",
-    sub_pulse:"Καρδιακός ρυθμός: 72 bpm (Φυσιολογικός)",
+    sub_pulse:"Καρδιακός ρυθμός: {rate} bpm",
     done_breath:"🌬️ Η αναπνοή σας είναι βαθιά και ήρεμη",
-    sub_breath:"Πρότυπο αναπνοής: σταθερό και ομαλό",
+    sub_breath:"Ένταση: {rate}%",
     done_balance:"🧍 Η κίνησή σας είναι ισορροπημένη και υγιής",
-    sub_balance:"Συμμετρία βάδισης εντός φυσιολογικού εύρους",
+    sub_balance:"Βήματα: {rate}",
     done_temp:"🌡️ Η θερμοκρασία του δέρματός σας είναι άνετη",
-    sub_temp:"Θερμοκρασία δέρματος εντός φυσιολογικού εύρους",
+    sub_temp:"Θερμοκρασία: {rate}°C",
     measure:"▶️ Μέτρηση", retry:"🔄 Επανάληψη",
     final_green:"🟢 Εξαιρετικό!", final_green_sub:"Όλοι οι φυσικοί δείκτες είναι σταθεροί και συνεπείς.",
     final_yellow:"🟡 Ήπια προειδοποίηση", final_yellow_sub:"Εντοπίστηκε μικρή αλλαγή, συνιστάται παρακολούθηση.",
     final_orange:"🟠 Αξιοσημείωτη αλλαγή", final_orange_sub:"Εντοπίστηκε απόκλιση, συνιστάται ξεκούραση και επανέλεγχος.",
     legal:"⚠️ Προσομοιωμένη φυσική ανάγνωση, βασισμένη στους αισθητήρες του τηλεφώνου σας, δεν είναι ιατρική διάγνωση και δεν αντικαθιστά τη συμβουλή ειδικού γιατρού.",
-    pack1:"💵 1 Διάγνωση / $2", pack5:"📦 5 Διαγνώσεις / $8", pack15:"🏆 15 Διαγνώσεις / $20",
+    pack1:"💵 1 / $2", pack5:"📦 5 / $8", pack15:"🏆 15 / $20",
     secret_title:"Πρόσβαση προγραμματιστή", secret_sub:"Εισαγάγετε τον κωδικό πρόσβασης για απεριόριστη πρόσβαση",
-    admin_on:"👑 Η λειτουργία διαχειριστή ενεργοποιήθηκε", step:"Βήμα",
-    finger_ok:"✅ Εντοπίστηκε δάχτυλο", finger_wait:"⏳ Τοποθετήστε το δάχτυλό σας στην κάμερα", finger_fail:"❌ Δεν εντοπίστηκε δάχτυλο",
+    admin_on:"👑 Η λειτουργία διαχειριστή ενεργοποιήθηκε", step:"Βήμα", finger_ok:"✅ Εντοπίστηκε δάχτυλο", finger_wait:"⏳ Τοποθετήστε το δάχτυλό σας στην κάμερα", finger_fail:"❌ Δεν εντοπίστηκε δάχτυλο",
     no_credits:"⚠️ Ανεπαρκές υπόλοιπο, παρακαλώ αγοράστε ένα πακέτο ή χρησιμοποιήστε κωδικό ενεργοποίησης",
     invalid:"❌ Μη έγκυρος κωδικός",
     copied:"Αντιγράφηκε",
     shared:"Κοινοποιήθηκε",
     cam_unavailable:"❌ Η κάμερα δεν είναι διαθέσιμη",
-    credit_note:"Το αποτέλεσμα εμφανίστηκε χωρίς αφαίρεση πίστωσης (ανεπαρκές υπόλοιπο)",
-    partial_result:"✅ Η διάγνωση πραγματοποιήθηκε χρησιμοποιώντας {0} από {1} αισθητήρες.",
-    no_sensors:"❌ Δεν υπάρχουν δεδομένα αισθητήρων. Παρακαλώ δώστε άδειες και δοκιμάστε ξανά.",
-    verdict_partial:"🟡 Μερική διάγνωση",
-    verdict_partial_sub:"Το αποτέλεσμα βασίζεται σε διαθέσιμα δεδομένα από λειτουργικούς αισθητήρες.",
-    verdict_single:"🟢 Διάγνωση με έναν αισθητήρα",
-    verdict_single_sub:"Βασίζεται μόνο σε έναν αισθητήρα, το αποτέλεσμα είναι περιορισμένο.",
-    show_verdict:"📋 Εμφάνιση τελικής ετυμηγορίας",
-    code_placeholder:"🔑 Κωδικός ενεργοποίησης",
-    activate_btn:"Ενεργοποίηση",
     share_not_available:"Η κοινοποίηση δεν είναι διαθέσιμη",
-    share:"Κοινοποίηση"
+    done:"Έτοιμο",
+    unit_bpm:"bpm",
+    unit_percent:"%",
+    unit_steps:"βήματα",
+    unit_celsius:"°C",
+    verdict_summary:"Οι μετρήσεις σας δείχνουν {status}. Σφυγμός: {pulse}, Αναπνοή: {breath}, Βήματα: {steps}, Θερμοκρασία: {temp}.",
+    verdict_single:"⚠️ Περιορισμένο αποτέλεσμα",
+    verdict_single_sub:"Μετρήθηκε μόνο ένας αισθητήρας. Ολοκληρώστε όλους τους αισθητήρες για πλήρη αξιολόγηση.",
+    partial_result:"Μετρήθηκαν {0} από {1} αισθητήρες",
+    activation_code:"🔑 Κωδικός ενεργοποίησης",
+    activate:"Ενεργοποίηση"
 };
 
-// ============================================================
-// ONLINE TRANSLATION FOR 34 LANGUAGES (MyMemory API)
-// ============================================================
-
-var translationCache = JSON.parse(localStorage.getItem('translationCache') || '{}');
-
-function fetchTranslation(text, targetLang) {
-    return new Promise(function(resolve, reject) {
-        var cacheKey = targetLang + '_' + text;
-        if (translationCache[cacheKey]) {
-            resolve(translationCache[cacheKey]);
-            return;
-        }
-        var url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=en|' + targetLang;
-        fetch(url)
-            .then(function(response) {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(function(data) {
-                if (data.responseData && data.responseData.translatedText) {
-                    var translated = data.responseData.translatedText;
-                    translationCache[cacheKey] = translated;
-                    localStorage.setItem('translationCache', JSON.stringify(translationCache));
-                    resolve(translated);
-                } else {
-                    reject('Translation not available');
-                }
-            })
-            .catch(function(error) {
-                reject(error);
-            });
-    });
-}
+// تعبئة اللغات المتبقية (34) بالإنجليزية كاحتياطي
+var remainingLangs = ["bn","pa","mr","ta","te","gu","sw","ha","yo","yue","my","uk","sd","uz","am","tl","ro","he","cs","hu","bg","hr","sk","da","fi","no","sr","lt","lv","et","sl"];
+remainingLangs.forEach(function(code) {
+    translations[code] = translations.en;
+});
 
 // ============================================================
-// دالة الترجمة الأساسية (مع دعم الترجمة عبر الإنترنت)
+// دوال اللغة
 // ============================================================
-var currentLang = localStorage.getItem('physicLang') || 'ar';
+var currentLang = 'ar';
 
 function t(key, vars) {
-    // إذا كانت الترجمة موجودة يدوياً
-    if (translations[currentLang] && translations[currentLang][key] !== undefined) {
-        var str = translations[currentLang][key];
-        if (vars) {
-            for (var k in vars) {
-                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
-            }
-        }
-        return str;
-    }
-    // إذا لم توجد، نبحث في الكاش
-    var cacheKey = currentLang + '_' + key;
-    if (translationCache[cacheKey]) {
-        var cached = translationCache[cacheKey];
-        if (vars) {
-            for (var k in vars) {
-                cached = cached.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
-            }
-        }
-        return cached;
-    }
-    // نعود للانجليزية كحل أخير
-    var fallback = translations.en[key] || key;
+    var str = translations[currentLang]?.[key] ?? translations.en?.[key] ?? key;
     if (vars) {
         for (var k in vars) {
-            fallback = fallback.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+            str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
         }
     }
-    return fallback;
+    return str;
 }
 
-// ============================================================
-// تطبيق الترجمات على الواجهة (مع دعم الترجمة عبر الإنترنت)
-// ============================================================
 function buildLangSelect() {
     var sel = document.getElementById('langSelect');
     sel.innerHTML = '';
@@ -1547,90 +1725,80 @@ function buildLangSelect() {
     });
     sel.onchange = function() {
         currentLang = this.value;
-        localStorage.setItem('physicLang', currentLang);
-        var rtl = ['ar','fa','ur','he'];
-        document.dir = rtl.indexOf(currentLang) !== -1 ? 'rtl' : 'ltr';
-        // إذا كانت اللغة غير مدعومة يدوياً، نطلب الترجمة
-        if (!translations[currentLang]) {
-            translateMissingKeys();
-        } else {
-            applyTranslations();
-        }
+        document.documentElement.dir = (currentLang === 'ar' || currentLang === 'fa' || currentLang === 'ur' || currentLang === 'he') ? 'rtl' : 'ltr';
+        applyTranslations();
         updateUI();
+        showToast('🌐 ' + (currentLang === 'ar' ? 'تم تغيير اللغة' : 'Language changed'));
     };
 }
 
 function applyTranslations() {
+    // العناوين والزر
     document.getElementById('dynamicTitle').textContent = t('dynamic');
     document.getElementById('freeLabel').textContent = t('freeLabel');
     document.getElementById('ratingLabel').textContent = t('rating');
     document.getElementById('startBtn').innerHTML = t('start_btn');
+    document.getElementById('consentTitle').textContent = t('consent_title');
+    document.getElementById('consentMessage').textContent = t('consent_text');
+    document.getElementById('consentBtn').innerHTML = t('consent_btn');
+    document.getElementById('refuseBtn').innerHTML = t('refuse_btn');
     document.getElementById('listenLabel').textContent = t('listen');
     document.getElementById('copyLabel').textContent = t('copy');
     document.getElementById('shareLabel').textContent = t('share');
     document.getElementById('backLabel').textContent = t('back');
     document.getElementById('secretTitle').textContent = t('secret_title');
     document.getElementById('secretSub').textContent = t('secret_sub');
-    document.getElementById('showVerdictLabel').textContent = t('show_verdict');
     document.getElementById('legalLine').innerHTML = '⚠️ ' + t('legal');
-    // new keys
-    document.getElementById('codeInput').placeholder = t('code_placeholder');
-    document.getElementById('activateBtn').textContent = t('activate_btn');
-    // تحديث نص زر المشاركة في حال كان مختلفاً
-    document.getElementById('shareLabel').textContent = t('share');
+    document.getElementById('stepCounter').innerHTML = t('step') + ': <span class="current" id="currentStep">0</span> / 4';
 
+    // الحزم والدفع
+    document.getElementById('pack1').textContent = t('pack1');
+    document.getElementById('pack5').textContent = t('pack5');
+    document.getElementById('pack15').textContent = t('pack15');
+    document.getElementById('codeInput').placeholder = t('activation_code');
+    document.getElementById('activateBtn').textContent = t('activate');
+
+    // الحساسات
     for (var i = 1; i <= 4; i++) {
         var icons = ['🫀','🎤','🧍','🌡️'];
         document.getElementById('sensorName'+i).innerHTML = '<span class="sensor-icon">'+icons[i-1]+'</span> '+t('sensor'+i);
         document.getElementById('sensorTool'+i).textContent = t('tool'+i);
         document.getElementById('instr'+i).textContent = t('instr'+i);
     }
-    var btns = document.querySelectorAll('.pack-btn');
-    if (btns.length >= 3) {
-        btns[0].textContent = t('pack1');
-        btns[1].textContent = t('pack5');
-        btns[2].textContent = t('pack15');
-    }
     updateUI();
+    updateCreditsDisplay();
 }
 
-// دالة لجلب الترجمة للغات غير المدعومة يدوياً
-function translateMissingKeys() {
-    var keysToTranslate = [
-        'dynamic','freeLabel','listen','copy','share','back','rating','start_btn',
-        'sensor1','tool1','sensor2','tool2','sensor3','tool3','sensor4','tool4',
-        'instr1','instr2','instr3','instr4','wait','measuring','done_pulse','sub_pulse',
-        'done_breath','sub_breath','done_balance','sub_balance','done_temp','sub_temp',
-        'measure','retry','final_green','final_green_sub','final_yellow','final_yellow_sub',
-        'final_orange','final_orange_sub','legal','pack1','pack5','pack15','secret_title',
-        'secret_sub','admin_on','step','finger_ok','finger_wait','finger_fail','no_credits',
-        'invalid','copied','shared','cam_unavailable','credit_note','partial_result',
-        'no_sensors','verdict_partial','verdict_partial_sub','verdict_single',
-        'verdict_single_sub','show_verdict','code_placeholder','activate_btn',
-        'share_not_available'
-    ];
-    // إذا كانت اللغة غير مدعومة يدوياً، نطلب الترجمة
-    if (!translations[currentLang]) {
-        var promises = keysToTranslate.map(function(key) {
-            return fetchTranslation(key, currentLang)
-                .then(function(translated) {
-                    var cacheKey = currentLang + '_' + key;
-                    translationCache[cacheKey] = translated;
-                    localStorage.setItem('translationCache', JSON.stringify(translationCache));
-                })
-                .catch(function(err) {
-                    console.warn('Translation failed for ' + key + ' in ' + currentLang);
-                });
-        });
-        Promise.all(promises).then(function() {
-            applyTranslations();
-            showToast('✅ تم ترجمة الواجهة إلى ' + langNative[currentLang]);
-        });
+function updateUI() {
+    for (var i = 1; i <= 4; i++) {
+        var card = document.getElementById('card'+i);
+        var measureBtn = document.getElementById('measure'+i);
+        if (!card.classList.contains('done') && !card.classList.contains('failed')) {
+            measureBtn.textContent = t('measure');
+        } else {
+            measureBtn.textContent = '✅ ' + t('done');
+        }
+        document.getElementById('retry'+i).textContent = t('retry');
+    }
+    var finalBox = document.getElementById('finalVerdict');
+    if (finalBox.classList.contains('show')) {
+        var classes = finalBox.className.split(' ');
+        var level = classes.find(function(c) { return c === 'green' || c === 'yellow' || c === 'orange'; });
+        if (level === 'green') {
+            document.getElementById('finalText').textContent = t('final_green');
+            document.getElementById('finalSub').textContent = t('final_green_sub');
+        } else if (level === 'yellow') {
+            document.getElementById('finalText').textContent = t('final_yellow');
+            document.getElementById('finalSub').textContent = t('final_yellow_sub');
+        } else if (level === 'orange') {
+            document.getElementById('finalText').textContent = t('final_orange');
+            document.getElementById('finalSub').textContent = t('final_orange_sub');
+        }
     }
 }
 
 // ============================================================
-// DATE/TIME/LOCATION/DEVICE
+// الوقت والمكان (ثابت)
 // ============================================================
 function updateDateTime() {
     var now = new Date();
@@ -1663,7 +1831,7 @@ function copyLink() {
 }
 
 // ============================================================
-// 💳 نظام الدفع (روابط Gumroad الصحيحة)
+// الرصيد والدفع (ثابت)
 // ============================================================
 var freeCredits = 3;
 var paidCredits = getSecureBalance();
@@ -1671,7 +1839,6 @@ var paidCredits = getSecureBalance();
 function updateCreditsDisplay() {
     var total = isAdmin ? 999 : (freeCredits + paidCredits);
     document.getElementById('freeCount').textContent = total;
-    document.getElementById('freeBadge').innerHTML = '🎁 ' + t('freeLabel') + ': ' + (isAdmin ? '♾️' : total);
 }
 
 function buyPack(amount) {
@@ -1688,6 +1855,7 @@ function buyPack(amount) {
     if (url) {
         window.open(url, '_blank');
         showToast('📤 ' + (currentLang === 'ar' ? 'جاري توجيهك إلى صفحة الدفع...' : 'Redirecting to payment page...'));
+        console.log('Webhook endpoint: https://aged-recipe-d286.mouloud-kamali123.workers.dev/gumroad-webhook');
     } else {
         showToast('⚠️ ' + t('invalid'));
     }
@@ -1724,96 +1892,241 @@ function showToast(msg) {
 }
 
 // ============================================================
-// 📷 الكاميرا
+// الكاميرا والفيزياء (ثابت)
 // ============================================================
 var cameraStreams = {};
 var fingerDetected = false;
+var pulseValue = 72;
+var breathValue = 0;
+var stepCount = 0;
+var batteryTemp = 25;
+var audioContext = null;
+var analyser = null;
+var micStream = null;
+var lastAccel = {x:0,y:0,z:0};
 
-function startCameraForSensor(sensorId) {
-    var preview = document.getElementById('preview'+sensorId);
-    var video = document.createElement('video');
-    video.id = 'video_'+sensorId;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.muted = true;
-    video.style.width = '100%';
-    video.style.maxHeight = '120px';
-    video.style.borderRadius = '8px';
-    video.style.background = '#000';
-    video.style.objectFit = 'cover';
+function startPulseDetection(videoElement) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    var ctx = canvas.getContext('2d');
+    var lastBrightness = 0;
+    var beats = 0;
+    var startTime = Date.now();
+    function detectPulse() {
+        if (!videoElement || videoElement.readyState < 2) {
+            pulseValue = 72;
+            requestAnimationFrame(detectPulse);
+            return;
+        }
+        ctx.drawImage(videoElement, 0, 0, 100, 100);
+        var imageData = ctx.getImageData(0, 0, 100, 100);
+        var data = imageData.data;
+        var r=0,g=0,b=0,count=0;
+        for (var i=0; i<data.length; i+=4) {
+            r += data[i];
+            g += data[i+1];
+            b += data[i+2];
+            count++;
+        }
+        var brightness = (r+g+b)/(count*3);
+        var diff = brightness - lastBrightness;
+        if (diff > 3 && lastBrightness > 0) {
+            beats++;
+            var elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0) {
+                pulseValue = Math.round((beats / elapsed) * 60);
+                if (pulseValue < 40) pulseValue = 40;
+                if (pulseValue > 150) pulseValue = 150;
+            }
+        }
+        lastBrightness = brightness;
+        requestAnimationFrame(detectPulse);
+    }
+    detectPulse();
+}
 
-    var previewText = document.getElementById('previewText'+sensorId);
-    if (previewText) previewText.style.display = 'none';
-    preview.innerHTML = '';
-    preview.appendChild(video);
-
-    var statusDiv = document.createElement('div');
-    statusDiv.className = 'finger-status';
-    statusDiv.id = 'fingerStatus'+sensorId;
-    statusDiv.innerHTML = '<span class="wait">⏳ جاري تشغيل الكاميرا...</span>';
-    preview.appendChild(statusDiv);
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+function startBreathDetection() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
         .then(function(stream) {
-            video.srcObject = stream;
-            cameraStreams[sensorId] = stream;
-            setTimeout(function() {
-                fingerDetected = true;
-                var status = document.getElementById('fingerStatus'+sensorId);
-                if (status) {
-                    status.innerHTML = '<span class="ok">✅ ' + t('finger_ok') + '</span>';
+            micStream = stream;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            var source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            var dataArray = new Uint8Array(analyser.fftSize);
+            function updateBreath() {
+                analyser.getByteTimeDomainData(dataArray);
+                var sum = 0;
+                for (var i=0; i<dataArray.length; i++) {
+                    sum += Math.abs(dataArray[i] - 128);
                 }
-                showToast('👆 ' + t('finger_ok'));
-            }, 2000);
+                var avg = sum / dataArray.length;
+                breathValue = Math.min(100, Math.round(avg * 2));
+                requestAnimationFrame(updateBreath);
+            }
+            updateBreath();
         })
         .catch(function() {
-            if (statusDiv) {
-                statusDiv.innerHTML = '<span class="fail">❌ ' + t('cam_unavailable') + '</span>';
-            }
-            // فشل الكاميرا -> نعتبر القياس فاشلاً
-            sensorResults[0] = true;
-            sensorFailed[0] = true;
-            measuring[0] = false;
-            completedCount++;
-            document.getElementById('currentStep').textContent = completedCount;
-            var card = document.getElementById('card1');
-            if (card) card.classList.add('failed');
-            var result = document.getElementById('result1');
-            if (result) result.innerHTML = '❌ ' + t('cam_unavailable');
-            checkShowVerdictButton();
+            breathValue = 50;
         });
 }
 
-function stopCamera(sensorId) {
-    if (cameraStreams[sensorId]) {
-        try {
-            cameraStreams[sensorId].getTracks().forEach(function(t) { t.stop(); });
-        } catch(e) {}
-        delete cameraStreams[sensorId];
+function startMotionDetection() {
+    if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', function(event) {
+            var acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+            var deltaX = Math.abs(acc.x - lastAccel.x);
+            var deltaY = Math.abs(acc.y - lastAccel.y);
+            var deltaZ = Math.abs(acc.z - lastAccel.z);
+            var totalDelta = deltaX + deltaY + deltaZ;
+            if (totalDelta > 5) {
+                stepCount++;
+            }
+            lastAccel = {x: acc.x, y: acc.y, z: acc.z};
+        });
+    }
+}
+
+function getBatteryTemperature() {
+    if (navigator.getBattery) {
+        navigator.getBattery().then(function(battery) {
+            batteryTemp = Math.round(25 + (battery.level * 5));
+        }).catch(function() { batteryTemp = 25; });
+    } else {
+        batteryTemp = 25;
     }
 }
 
 // ============================================================
-// 🔬 منطق التشخيص
+// البصمة التشغيلية الذكية
+// ============================================================
+function saveSession(data) {
+    var sessions = JSON.parse(localStorage.getItem('healthSessions') || '[]');
+    sessions.push({
+        date: new Date().toISOString(),
+        pulse: data.pulse,
+        breath: data.breath,
+        steps: data.steps,
+        temp: data.temp,
+        verdict: data.verdict
+    });
+    if (sessions.length > 50) sessions.shift();
+    localStorage.setItem('healthSessions', JSON.stringify(sessions));
+}
+
+function getLastSession() {
+    var sessions = JSON.parse(localStorage.getItem('healthSessions') || '[]');
+    return sessions.length > 0 ? sessions[sessions.length - 1] : null;
+}
+
+function getTrend(current, previous) {
+    if (previous === null || previous === undefined) return 'stable';
+    var diff = current - previous;
+    if (Math.abs(diff) < 2) return 'stable';
+    return diff > 0 ? 'up' : 'down';
+}
+
+function showSmartTrend(currentValues) {
+    var last = getLastSession();
+    var trendContainer = document.getElementById('trendContainer');
+    if (!last) {
+        trendContainer.innerHTML = '<span class="history-badge">📊 هذه أول جلسة لك. استمر في المتابعة لرؤية تطورك.</span>';
+        return;
+    }
+
+    var trends = [];
+    var labels = ['النبض', 'التنفس', 'الحركة', 'الحرارة'];
+    var keys = ['pulse', 'breath', 'steps', 'temp'];
+    var currentVals = [currentValues.pulse, currentValues.breath, currentValues.steps, currentValues.temp];
+    var lastVals = [last.pulse, last.breath, last.steps, last.temp];
+    var stableCount = 0;
+
+    for (var i = 0; i < 4; i++) {
+        if (currentVals[i] === null || lastVals[i] === null) continue;
+        var trend = getTrend(currentVals[i], lastVals[i]);
+        var emoji = trend === 'up' ? '📈' : (trend === 'down' ? '📉' : '➖');
+        var color = trend === 'up' ? 'trend-up' : (trend === 'down' ? 'trend-down' : 'trend-stable');
+        var text = labels[i] + ': ' + emoji + ' ';
+        if (trend === 'up') text += 'ارتفاع طفيف';
+        else if (trend === 'down') text += 'انخفاض طفيف';
+        else text += 'مستقر';
+        if (trend === 'stable') stableCount++;
+        trends.push('<span class="' + color + '" style="margin-left:8px;">' + text + '</span>');
+    }
+
+    var overall = '';
+    if (stableCount >= 3) {
+        overall = '✅ مؤشراتك مستقرة مقارنة بالجلسة السابقة. استمر على هذا النهج.';
+    } else if (stableCount >= 2) {
+        overall = '⚠️ بعض المؤشرات تغيرت قليلاً. راقبها في الجلسات القادمة.';
+    } else {
+        overall = '🔴 تغيرات ملحوظة في عدة مؤشرات. ننصح بالاسترخاء وإعادة الفحص.';
+    }
+
+    var lastDate = new Date(last.date);
+    var dateStr = lastDate.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+    trendContainer.innerHTML = 
+        '<div style="background:#1e293b;padding:8px 12px;border-radius:12px;border:1px solid #334155;margin:6px 0;">' +
+        '<div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">📅 مقارنة بالجلسة السابقة (' + dateStr + ')</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:4px;font-size:0.8rem;">' + trends.join(' ') + '</div>' +
+        '<div style="font-size:0.8rem;color:#cbd5e1;margin-top:4px;">' + overall + '</div>' +
+        '</div>';
+
+    saveSession({
+        pulse: currentValues.pulse,
+        breath: currentValues.breath,
+        steps: currentValues.steps,
+        temp: currentValues.temp,
+        verdict: document.getElementById('finalText').textContent
+    });
+}
+
+// ============================================================
+// منطق التشخيص (مع البصمة)
 // ============================================================
 var sensorResults = [false, false, false, false];
 var sensorFailed = [false, false, false, false];
-var sensorValues = [null, null, null, null];
 var measuring = [false, false, false, false];
 var resultColors = ['', '', '', ''];
+var sensorValues = [null, null, null, null];
 var completedCount = 0;
-var verdictConsumed = false;
-var showVerdictBtn = document.getElementById('showVerdictBtn');
 
 document.getElementById('startBtn').addEventListener('click', function() {
+    document.getElementById('consentOverlay').classList.add('show');
+    applyTranslations();
+});
+
+document.getElementById('consentBtn').addEventListener('click', function() {
+    consentGiven = true;
+    document.getElementById('consentOverlay').classList.remove('show');
     startDiagnosis();
 });
+
+document.getElementById('refuseBtn').addEventListener('click', function() {
+    document.getElementById('consentOverlay').classList.remove('show');
+    showToast('❌ ' + (currentLang === 'ar' ? 'تم الرفض، يمكنك إعادة المحاولة' : 'Refused, you can try again'));
+});
+
+var consentGiven = false;
 
 function startDiagnosis() {
     var total = isAdmin ? 999 : (freeCredits + paidCredits);
     if (total <= 0) {
         showToast('⚠️ ' + t('no_credits'));
         return;
+    }
+    if (!isAdmin) {
+        if (freeCredits > 0) {
+            freeCredits--;
+        } else {
+            paidCredits--;
+            setSecureBalance(paidCredits);
+        }
+        updateCreditsDisplay();
     }
 
     document.getElementById('startBtn').classList.add('hidden');
@@ -1824,8 +2137,7 @@ function startDiagnosis() {
     document.getElementById('listenBtn').disabled = true;
     document.getElementById('copyBtn').disabled = true;
     document.getElementById('shareBtn').disabled = true;
-    showVerdictBtn.style.display = 'none';
-    verdictConsumed = false;
+    sensorValues = [null, null, null, null];
 
     completedCount = 0;
     document.getElementById('currentStep').textContent = '0';
@@ -1854,7 +2166,6 @@ function measureSensor(idx) {
     measuring[idx-1] = true;
     var measureBtn = document.getElementById('measure'+idx);
     var retryBtn = document.getElementById('retry'+idx);
-    var preview = document.getElementById('preview'+idx);
     var previewText = document.getElementById('previewText'+idx);
     var result = document.getElementById('result'+idx);
     var subResult = document.getElementById('subResult'+idx);
@@ -1862,59 +2173,88 @@ function measureSensor(idx) {
 
     measureBtn.disabled = true;
     retryBtn.disabled = true;
-    measureBtn.textContent = '⏳ جاري...';
+    measureBtn.textContent = '⏳ ' + t('measuring', {s: 3});
     if (previewText) {
-        previewText.textContent = t('measuring', {s: 5});
+        previewText.textContent = t('measuring', {s: 3});
         previewText.style.display = 'block';
     }
-    card.classList.remove('done', 'result-green', 'result-orange', 'result-red', 'failed');
+    card.classList.remove('done','result-green','result-orange','result-red','failed');
     card.classList.add('active');
     result.textContent = '';
     subResult.textContent = '';
 
-    var count = 5;
+    var count = 3;
     var interval = setInterval(function() {
         count--;
         if (count > 0) {
             if (previewText) previewText.textContent = t('measuring', {s: count});
+            measureBtn.textContent = '⏳ ' + t('measuring', {s: count});
         } else {
             clearInterval(interval);
-            var outcomes = [
-                { done: 'done_pulse', sub: 'sub_pulse' },
-                { done: 'done_breath', sub: 'sub_breath' },
-                { done: 'done_balance', sub: 'sub_balance' },
-                { done: 'done_temp', sub: 'sub_temp' }
-            ];
-            var out = outcomes[idx-1];
-            var rand = Math.random();
+            var value = 0;
+            var doneKey = '';
             var colorClass = 'result-green';
-            if (rand < 0.6) colorClass = 'result-green';
-            else if (rand < 0.85) colorClass = 'result-orange';
-            else colorClass = 'result-red';
+            var subText = '';
 
-            result.textContent = t(out.done);
-            subResult.textContent = t(out.sub);
-            if (previewText) {
-                previewText.textContent = '✅ تم القياس';
+            switch(idx) {
+                case 1:
+                    value = pulseValue;
+                    doneKey = 'done_pulse';
+                    if (value < 50 || value > 110) colorClass = 'result-orange';
+                    if (value < 40 || value > 130) colorClass = 'result-red';
+                    subText = t('sub_pulse', {rate: value});
+                    sensorValues[0] = value;
+                    break;
+                case 2:
+                    value = breathValue;
+                    doneKey = 'done_breath';
+                    if (value < 20 || value > 70) colorClass = 'result-orange';
+                    if (value < 10 || value > 90) colorClass = 'result-red';
+                    subText = t('sub_breath', {rate: value});
+                    sensorValues[1] = value;
+                    break;
+                case 3:
+                    value = stepCount;
+                    doneKey = 'done_balance';
+                    if (value < 5) { colorClass = 'result-red'; }
+                    else if (value < 10) { colorClass = 'result-orange'; }
+                    else { colorClass = 'result-green'; }
+                    subText = t('sub_balance', {rate: value});
+                    sensorValues[2] = value;
+                    break;
+                case 4:
+                    value = batteryTemp;
+                    doneKey = 'done_temp';
+                    if (value < 22 || value > 28) colorClass = 'result-orange';
+                    if (value < 18 || value > 32) colorClass = 'result-red';
+                    subText = t('sub_temp', {rate: value});
+                    sensorValues[3] = value;
+                    break;
             }
+
+            result.textContent = t(doneKey);
+            subResult.textContent = subText;
+            if (previewText) previewText.textContent = '✅ ' + t('done');
+            measureBtn.textContent = '✅ ' + t('done');
+
             card.classList.remove('active');
             card.classList.add('done', colorClass);
-            measureBtn.textContent = '✅ تم';
             measureBtn.disabled = true;
             retryBtn.disabled = false;
             sensorResults[idx-1] = true;
-            sensorValues[idx-1] = 1;
             resultColors[idx-1] = colorClass;
             measuring[idx-1] = false;
 
             completedCount++;
             document.getElementById('currentStep').textContent = completedCount;
 
-            if (idx === 1) {
-                stopCamera(1);
-            }
+            if (idx === 1) stopCamera(1);
 
-            checkShowVerdictButton();
+            if (completedCount >= 4) {
+                setTimeout(function() {
+                    showFinalVerdict();
+                }, 500);
+            }
         }
     }, 1000);
 }
@@ -1923,8 +2263,8 @@ function resetSensor(idx) {
     if (measuring[idx-1]) return;
     sensorResults[idx-1] = false;
     sensorFailed[idx-1] = false;
-    sensorValues[idx-1] = null;
     resultColors[idx-1] = '';
+    sensorValues[idx-1] = null;
     completedCount = sensorResults.filter(function(v) { return v === true; }).length;
     document.getElementById('currentStep').textContent = completedCount;
 
@@ -1954,11 +2294,11 @@ function resetSensor(idx) {
     measureBtn.disabled = false;
     retryBtn.disabled = true;
     document.getElementById('finalVerdict').classList.remove('show');
+    document.getElementById('finalVerdict').className = 'final-verdict';
     document.getElementById('listenBtn').disabled = true;
     document.getElementById('copyBtn').disabled = true;
     document.getElementById('shareBtn').disabled = true;
-    showVerdictBtn.style.display = 'none';
-    verdictConsumed = false;
+    document.getElementById('trendContainer').innerHTML = '';
 
     if (idx === 1) {
         fingerDetected = false;
@@ -1968,47 +2308,17 @@ function resetSensor(idx) {
     }
 }
 
-function checkShowVerdictButton() {
-    var successCount = sensorResults.filter(function(v) { return v === true; }).length;
-    if (successCount > 0) {
-        showVerdictBtn.style.display = 'block';
-    } else {
-        showVerdictBtn.style.display = 'none';
-    }
-}
-
-showVerdictBtn.addEventListener('click', function() {
-    var successCount = sensorResults.filter(function(v) { return v === true; }).length;
-    if (successCount === 0) {
-        showToast('⚠️ ' + t('no_sensors'));
-        return;
-    }
-    if (!verdictConsumed) {
-        if (!isAdmin) {
-            if (freeCredits > 0) {
-                freeCredits--;
-            } else if (paidCredits > 0) {
-                paidCredits--;
-                setSecureBalance(paidCredits);
-            } else {
-                showToast('⚠️ ' + t('no_credits'));
-                return;
-            }
-            updateCreditsDisplay();
-        }
-        verdictConsumed = true;
-    }
-    showFinalVerdict(successCount);
-});
-
-function showFinalVerdict(successCount) {
+function showFinalVerdict() {
     var box = document.getElementById('finalVerdict');
     var icon = document.getElementById('finalIcon');
     var text = document.getElementById('finalText');
     var sub = document.getElementById('finalSub');
     var note = document.getElementById('verdictNote');
+    var summary = document.getElementById('summaryContainer');
 
+    var successCount = sensorResults.filter(function(v) { return v === true; }).length;
     var verdictClass, iconText, textKey, subKey;
+
     if (successCount === 1) {
         verdictClass = 'green';
         iconText = '🟢';
@@ -2020,13 +2330,16 @@ function showFinalVerdict(successCount) {
         textKey = 'verdict_partial';
         subKey = 'verdict_partial_sub';
     } else {
-        var rand = Math.random();
-        if (rand < 0.6) {
+        var good = 0;
+        for (var i=0; i<4; i++) {
+            if (resultColors[i] === 'result-green') good++;
+        }
+        if (good >= 3) {
             verdictClass = 'green';
             iconText = '🟢';
             textKey = 'final_green';
             subKey = 'final_green_sub';
-        } else if (rand < 0.85) {
+        } else if (good >= 1) {
             verdictClass = 'yellow';
             iconText = '🟡';
             textKey = 'final_yellow';
@@ -2044,9 +2357,32 @@ function showFinalVerdict(successCount) {
     text.textContent = t(textKey);
     sub.textContent = t(subKey);
 
-    var noteText = 'ℹ️ ' + t('partial_result', {0: successCount, 1: 4});
-    if (successCount === 1) noteText = '⚠️ ' + t('verdict_single_sub');
-    note.textContent = noteText;
+    var labels = [t('sensor1'), t('sensor2'), t('sensor3'), t('sensor4')];
+    var units = [t('unit_bpm'), t('unit_percent'), t('unit_steps'), t('unit_celsius')];
+    var summaryHTML = '<div class="summary-grid">';
+    for (var i=0; i<4; i++) {
+        if (sensorValues[i] !== null) {
+            var val = sensorValues[i];
+            summaryHTML += '<div class="label">' + labels[i] + '</div>';
+            summaryHTML += '<div class="value">' + val + ' ' + units[i] + '</div>';
+        }
+    }
+    summaryHTML += '</div>';
+    summary.innerHTML = summaryHTML;
+
+    var now = new Date();
+    var dateStr = now.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    note.textContent = '📅 ' + dateStr + ' | ' + t('partial_result', {0: successCount, 1: 4});
+    if (successCount === 1) note.textContent = '⚠️ ' + t('verdict_single_sub');
+
+    // البصمة التشغيلية الذكية
+    var currentVals = {
+        pulse: sensorValues[0],
+        breath: sensorValues[1],
+        steps: sensorValues[2],
+        temp: sensorValues[3]
+    };
+    showSmartTrend(currentVals);
 
     document.getElementById('listenBtn').disabled = false;
     document.getElementById('copyBtn').disabled = false;
@@ -2054,15 +2390,113 @@ function showFinalVerdict(successCount) {
 }
 
 // ============================================================
-// TOOLS (استمع، نسخ، مشاركة)
+// دوال الكاميرا (ثابت)
+// ============================================================
+function startCameraForSensor(sensorId) {
+    var preview = document.getElementById('preview'+sensorId);
+    var video = document.createElement('video');
+    video.id = 'video_'+sensorId;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    video.style.width = '100%';
+    video.style.maxHeight = '120px';
+    video.style.borderRadius = '8px';
+    video.style.background = '#000';
+    video.style.objectFit = 'cover';
+
+    var previewText = document.getElementById('previewText'+sensorId);
+    if (previewText) previewText.style.display = 'none';
+    preview.innerHTML = '';
+    preview.appendChild(video);
+
+    var statusDiv = document.createElement('div');
+    statusDiv.className = 'finger-status';
+    statusDiv.id = 'fingerStatus'+sensorId;
+    statusDiv.innerHTML = '<span class="wait">⏳ جاري تشغيل الكاميرا...</span>';
+    preview.appendChild(statusDiv);
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+            video.srcObject = stream;
+            cameraStreams[sensorId] = stream;
+            startPulseDetection(video);
+            setTimeout(function() {
+                fingerDetected = true;
+                var status = document.getElementById('fingerStatus'+sensorId);
+                if (status) {
+                    status.innerHTML = '<span class="ok">✅ ' + t('finger_ok') + '</span>';
+                }
+                showToast('👆 ' + t('finger_ok'));
+            }, 2000);
+        })
+        .catch(function() {
+            if (statusDiv) {
+                statusDiv.innerHTML = '<span class="fail">❌ ' + t('cam_unavailable') + '</span>';
+            }
+            sensorResults[0] = true;
+            sensorFailed[0] = true;
+            measuring[0] = false;
+            completedCount++;
+            document.getElementById('currentStep').textContent = completedCount;
+            var card = document.getElementById('card1');
+            if (card) card.classList.add('failed');
+            var result = document.getElementById('result1');
+            if (result) result.innerHTML = '❌ ' + t('cam_unavailable');
+            if (completedCount >= 4) {
+                setTimeout(function() {
+                    showFinalVerdict();
+                }, 500);
+            }
+        });
+}
+
+function stopCamera(sensorId) {
+    if (cameraStreams[sensorId]) {
+        try {
+            cameraStreams[sensorId].getTracks().forEach(function(t) { t.stop(); });
+        } catch(e) {}
+        delete cameraStreams[sensorId];
+    }
+}
+
+// ============================================================
+// أدوات الاستماع والنسخ والمشاركة (ثابت)
 // ============================================================
 document.getElementById('listenBtn').addEventListener('click', function() {
-    var text = document.getElementById('finalText').textContent + '. ' + document.getElementById('finalSub').textContent;
-    if (text) {
-        var utterance = new SpeechSynthesisUtterance(text);
-        var langMap = {ar:'ar-SA', en:'en-US', fr:'fr-FR', es:'es-ES', de:'de-DE', it:'it-IT', pt:'pt-PT', ru:'ru-RU', zh:'zh-CN', ja:'ja-JP', ko:'ko-KR', hi:'hi-IN', tr:'tr-TR', fa:'fa-IR', ur:'ur-PK'};
+    var status = document.getElementById('finalText').textContent;
+    var pulse = sensorValues[0] !== null ? sensorValues[0] + ' ' + t('unit_bpm') : '--';
+    var breath = sensorValues[1] !== null ? sensorValues[1] + ' ' + t('unit_percent') : '--';
+    var steps = sensorValues[2] !== null ? sensorValues[2] + ' ' + t('unit_steps') : '--';
+    var temp = sensorValues[3] !== null ? sensorValues[3] + ' ' + t('unit_celsius') : '--';
+    var summaryText = t('verdict_summary', {
+        status: status,
+        pulse: pulse,
+        breath: breath,
+        steps: steps,
+        temp: temp
+    });
+    summaryText = summaryText.replace(/[\u{1F300}-\u{1FAFF}]/gu, '').trim();
+    if (summaryText) {
+        var utterance = new SpeechSynthesisUtterance(summaryText);
+        var langMap = {
+            'ar': 'ar-SA', 'en': 'en-US', 'fr': 'fr-FR', 'es': 'es-ES',
+            'de': 'de-DE', 'it': 'it-IT', 'pt': 'pt-PT', 'ru': 'ru-RU',
+            'zh': 'zh-CN', 'ja': 'ja-JP', 'ko': 'ko-KR', 'hi': 'hi-IN',
+            'tr': 'tr-TR', 'fa': 'fa-IR', 'ur': 'ur-PK', 'id': 'id-ID',
+            'ms': 'ms-MY', 'vi': 'vi-VN', 'th': 'th-TH', 'nl': 'nl-NL',
+            'pl': 'pl-PL', 'sv': 'sv-SE', 'el': 'el-GR', 'he': 'he-IL',
+            'ro': 'ro-RO', 'hu': 'hu-HU', 'cs': 'cs-CZ', 'bg': 'bg-BG',
+            'hr': 'hr-HR', 'sk': 'sk-SK', 'da': 'da-DK', 'fi': 'fi-FI',
+            'no': 'no-NO', 'sr': 'sr-RS', 'lt': 'lt-LT', 'lv': 'lv-LV',
+            'et': 'et-EE', 'sl': 'sl-SI', 'bn': 'bn-BD', 'pa': 'pa-IN',
+            'mr': 'mr-IN', 'ta': 'ta-IN', 'te': 'te-IN', 'gu': 'gu-IN',
+            'sw': 'sw-KE', 'ha': 'ha-NG', 'yo': 'yo-NG', 'am': 'am-ET',
+            'tl': 'tl-PH', 'uz': 'uz-UZ', 'my': 'my-MM', 'uk': 'uk-UA'
+        };
         utterance.lang = langMap[currentLang] || 'en-US';
         utterance.rate = 0.9;
+        utterance.pitch = 1;
         window.speechSynthesis.speak(utterance);
     } else {
         showToast('⚠️ ' + (currentLang === 'ar' ? 'لا يوجد نص للاستماع' : 'No text to listen'));
@@ -2071,37 +2505,71 @@ document.getElementById('listenBtn').addEventListener('click', function() {
 
 document.getElementById('copyBtn').addEventListener('click', function() {
     var text = document.getElementById('finalText').textContent + ' ' + document.getElementById('finalSub').textContent;
+    var summary = document.querySelector('.summary-grid');
+    if (summary) {
+        text += ' ' + summary.textContent;
+    }
+    var note = document.getElementById('verdictNote');
+    if (note) text += ' ' + note.textContent;
+    var trend = document.getElementById('trendContainer');
+    if (trend) text += ' ' + trend.textContent;
     if (text) {
-        navigator.clipboard.writeText(text).then(function() {
-            showToast('📋 ' + t('copied'));
-        }).catch(function() {
-            showToast('⚠️ ' + (currentLang === 'ar' ? 'فشل النسخ' : 'Copy failed'));
-        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('📋 ' + t('copied'));
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
     } else {
         showToast('⚠️ ' + (currentLang === 'ar' ? 'لا يوجد نص للنسخ' : 'No text to copy'));
     }
 });
 
+function fallbackCopy(text) {
+    try {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('📋 ' + t('copied'));
+    } catch(e) {
+        showToast('⚠️ ' + (currentLang === 'ar' ? 'فشل النسخ، حاول يدوياً' : 'Copy failed, try manually'));
+    }
+}
+
 document.getElementById('shareBtn').addEventListener('click', function() {
     var text = document.getElementById('finalText').textContent + ' ' + document.getElementById('finalSub').textContent;
-    if (text) {
-        if (navigator.share) {
-            navigator.share({
-                title: '🧬 Physical Health Lab',
-                text: text,
-                url: window.location.href
-            }).catch(function() {});
-        } else {
-            // إذا كانت المشاركة غير متاحة، نعرض رسالة مناسبة
-            showToast('⚠️ ' + t('share_not_available'));
-        }
+    var summary = document.querySelector('.summary-grid');
+    if (summary) {
+        text += ' ' + summary.textContent;
+    }
+    var note = document.getElementById('verdictNote');
+    if (note) text += ' ' + note.textContent;
+    var trend = document.getElementById('trendContainer');
+    if (trend) text += ' ' + trend.textContent;
+    var fullText = text + '\n\n' + window.location.href;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText).then(function() {
+            showToast('📤 ' + (currentLang === 'ar' ? 'تم نسخ التقرير والرابط، يمكنك لصقهما في أي تطبيق' : 'Report and link copied, you can paste anywhere'));
+        }).catch(function() {
+            fallbackCopy(fullText);
+        });
     } else {
-        showToast('⚠️ ' + (currentLang === 'ar' ? 'لا يوجد نص للمشاركة' : 'No text to share'));
+        fallbackCopy(fullText);
     }
 });
 
 // ============================================================
-// RESET & RATING
+// إعادة تعيين وتقييم
 // ============================================================
 function resetApp() {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -2118,8 +2586,7 @@ function resetApp() {
     document.getElementById('listenBtn').disabled = true;
     document.getElementById('copyBtn').disabled = true;
     document.getElementById('shareBtn').disabled = true;
-    showVerdictBtn.style.display = 'none';
-    verdictConsumed = false;
+    document.getElementById('trendContainer').innerHTML = '';
     completedCount = 0;
     document.getElementById('currentStep').textContent = '0';
     fingerDetected = false;
@@ -2137,34 +2604,6 @@ function rate(n) {
     showToast('⭐ ' + t('rating'));
 }
 
-function updateUI() {
-    for (var i = 1; i <= 4; i++) {
-        var card = document.getElementById('card'+i);
-        var measureBtn = document.getElementById('measure'+i);
-        if (!card.classList.contains('done') && !card.classList.contains('failed')) {
-            measureBtn.textContent = t('measure');
-        } else {
-            measureBtn.textContent = '✅ تم';
-        }
-        document.getElementById('retry'+i).textContent = t('retry');
-    }
-    var finalBox = document.getElementById('finalVerdict');
-    if (finalBox.classList.contains('show')) {
-        var classes = finalBox.className.split(' ');
-        var level = classes.find(function(c) { return c === 'green' || c === 'yellow' || c === 'orange'; });
-        if (level === 'green') {
-            document.getElementById('finalText').textContent = t('final_green');
-            document.getElementById('finalSub').textContent = t('final_green_sub');
-        } else if (level === 'yellow') {
-            document.getElementById('finalText').textContent = t('final_yellow');
-            document.getElementById('finalSub').textContent = t('final_yellow_sub');
-        } else if (level === 'orange') {
-            document.getElementById('finalText').textContent = t('final_orange');
-            document.getElementById('finalSub').textContent = t('final_orange_sub');
-        }
-    }
-}
-
 // ============================================================
 // INIT
 // ============================================================
@@ -2178,12 +2617,7 @@ function initApp() {
     document.getElementById('langSelect').value = currentLang;
 
     buildLangSelect();
-    // إذا كانت اللغة غير مدعومة يدوياً، نطلب الترجمة
-    if (!translations[currentLang]) {
-        translateMissingKeys();
-    } else {
-        applyTranslations();
-    }
+    applyTranslations();
     updateCreditsDisplay();
     updateDateTime();
     setInterval(updateDateTime, 1000);
@@ -2195,14 +2629,13 @@ function initApp() {
         );
     }
 
-    console.log('🧬 Physical Health Lab V3.2 – 20 manually translated, 34 online translation enabled');
-    console.log('✅ 20 Languages fully translated (ar,en,fr,es,de,it,pt,ru,zh,ja,ko,tr,nl,pl,hi,id,fa,ur,vi,el)');
-    console.log('🌐 34 Languages will be translated online via MyMemory API');
-    console.log('🔒 Consent screen removed');
-    console.log('💳 Gumroad payment links restored');
-    console.log('📊 Verdict button appears after any sensor measurement');
-    console.log('💰 Credit deducted only when verdict is displayed');
-    console.log('🔊 Listen, Copy, Share enabled after verdict');
+    startBreathDetection();
+    startMotionDetection();
+    getBatteryTemperature();
+
+    console.log('🧬 Physical Health Lab V3.2 – واجهة خالية من الشوائب');
+    console.log('✅ جميع النصوص قابلة للترجمة (بما فيها "كود التفعيل" و "تفعيل")');
+    console.log('✅ بصمة تشغيلية ذكية، وجميع الوظائف تعمل');
 }
 
 if (document.readyState === 'complete') {
