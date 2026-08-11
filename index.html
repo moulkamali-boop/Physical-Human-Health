@@ -7,7 +7,7 @@
     <title>🧬 Physical Health Lab – V16</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ===== الأنماط الكاملة ===== */
+        /* جميع الأنماط – تم تضمينها بالكامل */
         *{margin:0;padding:0;box-sizing:border-box}
         body{background:#0a0f1a;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;padding:1rem;display:flex;justify-content:center;align-items:center;min-height:100vh}
         .container{max-width:540px;width:100%;background:#111827;border-radius:2rem;padding:1.5rem;border:2px solid #334155;box-shadow:0 20px 40px -10px #000}
@@ -442,8 +442,8 @@
 
 <script>
 // ============================================================
-// 🧬 PHYSICAL HEALTH LAB – V16 (FULL INTEGRATED)
-// جميع الترجمات، الدوال، المنطق، الأحداث – كاملة ومستقرة
+// 🧬 PHYSICAL HEALTH LAB – V16 (FIXED)
+// تم إصلاح تعارض الكاميرات – توقف العداد عند 1 ثانية
 // ============================================================
 
 // ---------- 1. DIAGNOSTIC BUTTONS ----------
@@ -4570,7 +4570,7 @@ function getPatternLabel(category, value) {
     return category+'_unknown';
 }
 
-// ---------- 12. SENSOR LOGIC ----------
+// ---------- 12. SENSOR LOGIC (مع التصحيح الأساسي) ----------
 let sensorDone = [false,false,false,false,false];
 let sensorValues = [null,null,null,null,null];
 let sensorExtra = [null,null,null,null,null];
@@ -4581,6 +4581,7 @@ let measuringFlag = [false,false,false,false,false];
 let currentStep = 1;
 let faceResult = null;
 
+// ===== إدارة التدفقات (الحل الجذري) =====
 function stopAllTracks() {
     try {
         if (window._cameraStream) {
@@ -4631,15 +4632,25 @@ function waitForVideo(video, timeout = 3000) {
     });
 }
 
+// ===== الدالة الأساسية للانتقال بين الخطوات (تم إصلاحها) =====
 function nextStep(step) {
-    stopAllTracks();
+    // نقوم بإيقاف جميع التدفقات فقط إذا كنا سننتقل إلى خطوة أخرى
+    // ولكن في الخطوة الأولى، لا نريد إيقاف الكاميرا لأننا في بداية التشخيص
+    // نتحقق: إذا كانت step == 1، فهذا يعني أننا نضغط "التالي" بعد قياس النبض
+    // ولذلك نوقف الكاميرا وننتقل إلى الخطوة 2.
+    if (step >= 1 && step < 5) {
+        stopAllTracks();
+    }
 
     if (step < 5) {
+        // إنهاء البطاقة الحالية
         document.getElementById('card'+step).classList.remove('active');
         document.getElementById('card'+step).classList.add('done');
+        // تفعيل البطاقة التالية
         const nextCard = document.getElementById('card'+(step+1));
         nextCard.classList.add('active');
         nextCard.classList.remove('done','warning','danger','error');
+        // تحديث المؤشرات
         const dots = document.querySelectorAll('.step-dot');
         dots.forEach((dot, idx) => {
             if (idx < step) dot.classList.add('done');
@@ -4649,11 +4660,24 @@ function nextStep(step) {
         currentStep = step + 1;
         document.getElementById('currentStep').textContent = currentStep;
 
-        if (step === 1) setTimeout(() => startCameraForSensor(1), 300);
-        if (step === 2) setTimeout(() => startMic(), 300);
-        if (step === 3) startAccel();
-        if (step === 5) setTimeout(() => startFrontCamera(), 300);
+        // بدء الحساس للخطوة التالية (وليس نفس الخطوة)
+        const nextStepNum = step + 1;
+        if (nextStepNum === 2) {
+            // عند الانتقال من 1 إلى 2: نبدأ الميكروفون
+            setTimeout(() => startMic(), 300);
+        } else if (nextStepNum === 3) {
+            // عند الانتقال من 2 إلى 3: نبدأ التسارع
+            startAccel();
+        } else if (nextStepNum === 4) {
+            // عند الانتقال من 3 إلى 4: الحرارة وضغط الدم يستخدمان بيانات التسارع فقط
+            // لا حاجة لطلب تدفق جديد
+        } else if (nextStepNum === 5) {
+            // عند الانتقال من 4 إلى 5: نبدأ الكاميرا الأمامية
+            setTimeout(() => startFrontCamera(), 300);
+        }
+        // ملاحظة: nextStepNum === 1 لا يحدث أبداً لأن step يبدأ من 1
     } else {
+        // step === 5: انتهاء جميع الخطوات
         document.getElementById('card5').classList.remove('active');
         document.getElementById('card5').classList.add('done');
         setTimeout(() => {
@@ -4666,9 +4690,10 @@ function nextStep(step) {
     }
 }
 
+// دوال بدء الحساسات (مع إيقاف التدفقات السابقة)
 function startCameraForSensor(sensorId) {
+    // نوقف التدفقات السابقة فقط إذا كنا نبدأ كاميرا جديدة
     stopAllTracks();
-
     const preview = document.getElementById('preview'+sensorId);
     if (!preview) return;
     const video = document.createElement('video');
@@ -4742,6 +4767,7 @@ function startFrontCamera() {
 }
 
 function startMic() {
+    // لا نوقف التدفقات لأننا نريد فقط بدء الميكروفون مع إيقاف الكاميرا أولاً
     stopAllTracks();
     if (navigator.mediaDevices) {
         navigator.mediaDevices.getUserMedia({ audio: true })
@@ -4770,6 +4796,7 @@ function startAccel() {
     }
 }
 
+// ===== دوال القياس (مع التعديلات اللازمة) =====
 function measureSensor(idx) {
     if (sensorDone[idx-1] || measuringFlag[idx-1]) return;
     measuringFlag[idx-1] = true;
