@@ -7,7 +7,7 @@
     <title>🧬 Physical Health Lab – V16</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* جميع الأنماط – كاملة */
+        /* ===== الأنماط الكاملة ===== */
         *{margin:0;padding:0;box-sizing:border-box}
         body{background:#0a0f1a;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;padding:1rem;display:flex;justify-content:center;align-items:center;min-height:100vh}
         .container{max-width:540px;width:100%;background:#111827;border-radius:2rem;padding:1.5rem;border:2px solid #334155;box-shadow:0 20px 40px -10px #000}
@@ -266,7 +266,7 @@
         </div>
         <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
 
-        <!-- Sensor 1 -->
+        <!-- Sensor 1: Pulse -->
         <div class="sensor-card active" id="card1" data-step="1">
             <div class="sensor-header">
                 <span id="sensorName1" style="color:#fff;"><span class="sensor-icon">🫀</span> النبض + SpO2 (PPG)</span>
@@ -289,7 +289,7 @@
             </div>
         </div>
 
-        <!-- Sensor 2 -->
+        <!-- Sensor 2: Breath -->
         <div class="sensor-card" id="card2" data-step="2">
             <div class="sensor-header">
                 <span id="sensorName2" style="color:#fff;"><span class="sensor-icon">🎤</span> التنفس والصوت</span>
@@ -308,7 +308,7 @@
             </div>
         </div>
 
-        <!-- Sensor 3 -->
+        <!-- Sensor 3: Gait -->
         <div class="sensor-card" id="card3" data-step="3">
             <div class="sensor-header">
                 <span id="sensorName3" style="color:#fff;"><span class="sensor-icon">🧍</span> المشي + التعب (16 معامل)</span>
@@ -327,7 +327,7 @@
             </div>
         </div>
 
-        <!-- Sensor 4 -->
+        <!-- Sensor 4: Temperature + BP -->
         <div class="sensor-card" id="card4" data-step="4">
             <div class="sensor-header">
                 <span id="sensorName4" style="color:#fff;"><span class="sensor-icon">🌡️</span> الحرارة + ضغط الدم (SCG)</span>
@@ -346,7 +346,7 @@
             </div>
         </div>
 
-        <!-- Sensor 5 -->
+        <!-- Sensor 5: Face -->
         <div class="sensor-card" id="card5" data-step="5">
             <div class="sensor-header">
                 <span id="sensorName5" style="color:#fff;"><span class="sensor-icon">🧠</span> الوجه + HbA1c</span>
@@ -442,8 +442,8 @@
 
 <script>
 // ============================================================
-// 🧬 PHYSICAL HEALTH LAB – V16 (FULL FINAL)
-// جميع الترجمات مكتملة، ولا توجد عوالق
+// 🧬 PHYSICAL HEALTH LAB – V16 (FULL INTEGRATED)
+// جميع الترجمات، الدوال، المنطق، الأحداث – كاملة ومستقرة
 // ============================================================
 
 // ---------- 1. DIAGNOSTIC BUTTONS ----------
@@ -487,10 +487,10 @@ const LANG_LIST = [
     { code: 'bn', flag: '🇧🇩', native: 'বাংলা', name: 'Bengali' }
 ];
 
-// ---------- 3. TRANSLATIONS (جميع اللغات مدمجة، مكتملة) ----------
+// ---------- 3. TRANSLATIONS (جميع اللغات مكتملة) ----------
 const translations = {};
 
-// ----- BASE ENGLISH (fallback) -----
+// Base English (fallback)
 const baseEn = {
     title_fixed: "Physical Health Lab",
     title_dynamic: "Physical Health Lab – V16",
@@ -3913,7 +3913,6 @@ function applyTranslations() {
         backLabel:'back_label', secretTitle:'secret_title', secretSub:'secret_sub',
         legalLine:'legal', quickResetBtn:'new_exam', passiveActiveLabel:'passive_active',
         passiveHrLabel:'passive_hr',
-        // Labels inside final verdict
         healthScoreLabel:'health_score', bpLabel:'bp_estimate', spo2Label:'spo2_label',
         hba1cLabel:'hba1c_label', fatigueLabel:'fatigue_label'
     };
@@ -4213,38 +4212,59 @@ function butterworthLowPass(signal, cutoff, fs, order) {
 
 // ---------- 10. MEASUREMENT FUNCTIONS ----------
 function measurePulseFromCamera(videoElement, duration) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
+        try {
+            await waitForVideo(videoElement, 3000);
+        } catch (e) {
+            return resolve({ pulse: null, spo2: null, hrv: null, quality: 'low', error: 'camera_not_ready' });
+        }
+
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const sampleRate = 30;
         const totalFrames = sampleRate * duration;
         let greenValues = [], redValues = [], frameCount = 0;
+        let canvasWidth = videoElement.videoWidth || 320;
+        let canvasHeight = videoElement.videoHeight || 240;
+
         const interval = setInterval(() => {
-            if (!videoElement || videoElement.readyState < 2) {
-                frameCount++;
-                if (frameCount >= totalFrames) { clearInterval(interval); resolve(processPPG(greenValues, redValues, sampleRate)); }
-                return;
-            }
-            canvas.width = videoElement.videoWidth || 320;
-            canvas.height = videoElement.videoHeight || 240;
-            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let gSum=0, rSum=0, count=0;
-            const cx=Math.floor(canvas.width*0.35), cy=Math.floor(canvas.height*0.35);
-            const w=Math.floor(canvas.width*0.30), h=Math.floor(canvas.height*0.30);
-            for (let y=cy; y<cy+h; y++) {
-                for (let x=cx; x<cx+w; x++) {
-                    const idx = (y*canvas.width + x)*4;
-                    gSum += data[idx+1];
-                    rSum += data[idx];
-                    count++;
+            try {
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let gSum = 0, rSum = 0, count = 0;
+                const cx = Math.floor(canvas.width * 0.35);
+                const cy = Math.floor(canvas.height * 0.35);
+                const w = Math.floor(canvas.width * 0.30);
+                const h = Math.floor(canvas.height * 0.30);
+                for (let y = cy; y < cy + h && y < canvas.height; y++) {
+                    for (let x = cx; x < cx + w && x < canvas.width; x++) {
+                        const idx = (y * canvas.width + x) * 4;
+                        if (idx + 2 < data.length) {
+                            gSum += data[idx + 1];
+                            rSum += data[idx];
+                            count++;
+                        }
+                    }
                 }
+                if (count > 0) {
+                    greenValues.push(gSum / count);
+                    redValues.push(rSum / count);
+                } else {
+                    greenValues.push(128);
+                    redValues.push(128);
+                }
+            } catch (e) {
+                greenValues.push(128);
+                redValues.push(128);
             }
-            greenValues.push(gSum/count);
-            redValues.push(rSum/count);
             frameCount++;
-            if (frameCount >= totalFrames) { clearInterval(interval); resolve(processPPG(greenValues, redValues, sampleRate)); }
-        }, 1000/sampleRate);
+            if (frameCount >= totalFrames) {
+                clearInterval(interval);
+                resolve(processPPG(greenValues, redValues, sampleRate));
+            }
+        }, 1000 / sampleRate);
     });
 }
 
@@ -4561,7 +4581,59 @@ let measuringFlag = [false,false,false,false,false];
 let currentStep = 1;
 let faceResult = null;
 
+function stopAllTracks() {
+    try {
+        if (window._cameraStream) {
+            window._cameraStream.getTracks().forEach(t => t.stop());
+            window._cameraStream = null;
+        }
+        if (window._frontCameraStream) {
+            window._frontCameraStream.getTracks().forEach(t => t.stop());
+            window._frontCameraStream = null;
+        }
+        if (micStream) {
+            micStream.getTracks().forEach(t => t.stop());
+            micStream = null;
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+            audioCtx.close();
+            audioCtx = null;
+            analyser = null;
+        }
+        document.querySelectorAll('.sensor-preview video').forEach(v => {
+            if (v.srcObject) {
+                v.srcObject = null;
+            }
+            v.remove();
+        });
+    } catch (e) {
+        console.warn('⚠️ خطأ في إيقاف التدفقات:', e);
+    }
+}
+
+function waitForVideo(video, timeout = 3000) {
+    return new Promise((resolve, reject) => {
+        if (!video) return reject('video_not_found');
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+            return resolve();
+        }
+        const start = Date.now();
+        const check = () => {
+            if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+                resolve();
+            } else if (Date.now() - start > timeout) {
+                reject('timeout');
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
+    });
+}
+
 function nextStep(step) {
+    stopAllTracks();
+
     if (step < 5) {
         document.getElementById('card'+step).classList.remove('active');
         document.getElementById('card'+step).classList.add('done');
@@ -4576,10 +4648,11 @@ function nextStep(step) {
         });
         currentStep = step + 1;
         document.getElementById('currentStep').textContent = currentStep;
-        if (step === 1) startCameraForSensor(1);
-        if (step === 2 && !audioCtx) startMic();
+
+        if (step === 1) setTimeout(() => startCameraForSensor(1), 300);
+        if (step === 2) setTimeout(() => startMic(), 300);
         if (step === 3) startAccel();
-        if (step === 5) startFrontCamera();
+        if (step === 5) setTimeout(() => startFrontCamera(), 300);
     } else {
         document.getElementById('card5').classList.remove('active');
         document.getElementById('card5').classList.add('done');
@@ -4594,6 +4667,8 @@ function nextStep(step) {
 }
 
 function startCameraForSensor(sensorId) {
+    stopAllTracks();
+
     const preview = document.getElementById('preview'+sensorId);
     if (!preview) return;
     const video = document.createElement('video');
@@ -4612,6 +4687,7 @@ function startCameraForSensor(sensorId) {
     status.id = 'fingerStatus'+sensorId;
     status.innerHTML = '<span class="wait">⏳ '+t('finger_wait')+'</span>';
     preview.appendChild(status);
+
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 320, height: 240 } })
         .then(stream => {
             video.srcObject = stream;
@@ -4622,10 +4698,14 @@ function startCameraForSensor(sensorId) {
         .catch(() => {
             const st = document.getElementById('fingerStatus'+sensorId);
             if (st) st.innerHTML = '<span class="fail">❌ '+t('cam_unavailable')+'</span>';
+            const retryBtn = document.getElementById('retry'+sensorId);
+            if (retryBtn) retryBtn.disabled = false;
+            showToast('⚠️ ' + (currentLang==='ar'?'تعذر الوصول للكاميرا، حاول مجدداً':'Camera unavailable, retry'));
         });
 }
 
 function startFrontCamera() {
+    stopAllTracks();
     const preview = document.getElementById('preview5');
     if (!preview) return;
     const video = document.createElement('video');
@@ -4644,6 +4724,7 @@ function startFrontCamera() {
     status.id = 'faceStatus5';
     status.innerHTML = '<span class="wait">⏳ '+t('face_wait')+'</span>';
     preview.appendChild(status);
+
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } })
         .then(stream => {
             video.srcObject = stream;
@@ -4654,10 +4735,14 @@ function startFrontCamera() {
         .catch(() => {
             const st = document.getElementById('faceStatus5');
             if (st) st.innerHTML = '<span class="fail">❌ '+t('cam_unavailable')+'</span>';
+            const retryBtn = document.getElementById('retry5');
+            if (retryBtn) retryBtn.disabled = false;
+            showToast('⚠️ ' + (currentLang==='ar'?'تعذر الوصول للكاميرا الأمامية':'Front camera unavailable'));
         });
 }
 
 function startMic() {
+    stopAllTracks();
     if (navigator.mediaDevices) {
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
@@ -4668,7 +4753,20 @@ function startMic() {
                 const source = audioCtx.createMediaStreamSource(stream);
                 source.connect(analyser);
             })
-            .catch(() => {});
+            .catch(() => {
+                showToast('⚠️ ' + (currentLang==='ar'?'تعذر الوصول للميكروفون':'Mic unavailable'));
+            });
+    }
+}
+
+function startAccel() {
+    if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', event => {
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+            accelBuffer.push({ x: acc.x||0, y: acc.y||0, z: acc.z||0 });
+            if (accelBuffer.length > 300) accelBuffer.shift();
+        });
     }
 }
 
@@ -4880,7 +4978,7 @@ function measureSensor(idx) {
         measuringFlag[idx-1] = false;
         if (card) card.classList.add('error');
         if (previewText) previewText.textContent = '⚠️ ' + t('signal_poor');
-        if (result) result.textContent = '❌ ' + (err.message || 'خطأ');
+        if (result) result.textContent = '❌ ' + (err.message || 'خطأ في القياس');
         if (subResult) subResult.textContent = '';
         if (measureBtn) { measureBtn.textContent = '❌ فشل'; measureBtn.disabled = true; }
         if (retryBtn) retryBtn.disabled = false;
@@ -5335,7 +5433,6 @@ function initApp() {
     updateCreditsDisplay();
     updateBaselineStatus();
     setMode('direct');
-    // ربط الأحداث الأساسية
     document.getElementById('startBtn').addEventListener('click', function() {
         document.getElementById('consentOverlay').classList.add('show');
     });
