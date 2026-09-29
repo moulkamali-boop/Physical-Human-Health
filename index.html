@@ -364,16 +364,29 @@ body{background:#0a0f1a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-seri
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   🛡️ LAYER 1: DOMAIN LOCK
+   🛡️ DOMAIN LOCK (Fixed for GitHub Pages)
    ═══════════════════════════════════════════════════════════════ */
 (function(){
     try {
-        var allowed = ['physics-lab-human.vercel.app','mouloudkamali.com','www.mouloudkamali.com','physicslabhuman.com','physicslabhumanhealth.com'];
+        var allowed = [
+            'physics-lab-human.vercel.app',
+            'mouloudkamali.com',
+            'www.mouloudkamali.com',
+            'physicslabhuman.com',
+            'physicslabhumanhealth.com',
+            'moulkamali-boop.github.io',
+            'github.io'
+        ];
         var proto = window.location.protocol, host = window.location.hostname || '';
         if (proto === 'file:' || proto === 'content:' || proto === 'blob:' || proto === 'data:'){console.log('🛡️ local ALLOWED');return}
         if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === ''){console.log('🛡️ dev ALLOWED');return}
         if (host.indexOf('192.168.') === 0 || host.indexOf('10.') === 0 || host.indexOf('172.') === 0){console.log('🛡️ LAN ALLOWED');return}
-        for (var i = 0; i < allowed.length; i++){if (host === allowed[i] || host.endsWith('.' + allowed[i])){console.log('🛡️ official ALLOWED');return}}
+        for (var i = 0; i < allowed.length; i++){
+            if (host === allowed[i] || host.endsWith('.' + allowed[i]) || host.indexOf(allowed[i]) !== -1){
+                console.log('🛡️ official ALLOWED');
+                return;
+            }
+        }
         console.warn('🛡️ UNAUTHORIZED:', host);
         document.documentElement.innerHTML = '<html><head><meta charset="UTF-8"><title>🔒</title></head><body style="background:#0a0f1a;color:#f5b81b;font-family:sans-serif;text-align:center;padding:60px 20px;min-height:100vh;display:flex;flex-direction:column;justify-content:center"><div style="font-size:5rem">🔒</div><h2>Physics Lab Human Health</h2><p>Licensed to Mouloud Kamali.</p><p style="color:#64748b;font-size:.8rem">© 2026 — All Rights Reserved</p><p style="color:#64748b;font-size:.7rem">Domain: <code>'+host+'</code></p></body></html>';
         throw new Error('Domain blocked');
